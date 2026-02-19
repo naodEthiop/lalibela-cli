@@ -1,10 +1,11 @@
-﻿# Lalibela
+﻿# Lalibela CLI
+![Project Logo](/logo.png)
 
-Lalibela is a keyboard-first Go CLI that scaffolds backend projects without Cobra.
+Lalibela is a keyboard-first Go CLI that scaffolds backend projects.
 
 ## Highlights
 
-- `flag`-based CLI (no Cobra)
+- `flag`-based CLI 
 - Interactive and fast modes
 - Framework scaffolds: `gin`, `echo`, `fiber`, `net/http`
 - Optional features: `Clean`, `Logger`, `PostgreSQL`, `JWT`, `Docker`

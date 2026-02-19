@@ -9,7 +9,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/naodEthiop/lalibela/internal/utils"
+	"github.com/naodEthiop/lalibela-cli/internal/utils"
 )
 
 const (
@@ -476,3 +476,4 @@ func renderTemplate(templatePath, outputPath string, data TemplateData) error {
 	}
 	return nil
 }
+

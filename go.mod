@@ -1,4 +1,4 @@
-module github.com/naodEthiop/lalibela
+module github.com/naodEthiop/lalibela-cli
 
 go 1.25.5
 

@@ -9,8 +9,8 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
-	"github.com/naodEthiop/lalibela/internal/cli"
-	"github.com/naodEthiop/lalibela/internal/generator"
+	"github.com/naodEthiop/lalibela-cli/internal/cli"
+	"github.com/naodEthiop/lalibela-cli/internal/generator"
 	"golang.org/x/term"
 )
 
@@ -353,3 +353,4 @@ func promptFeatureSelection(features []string) ([]string, error) {
 		render()
 	}
 }
+

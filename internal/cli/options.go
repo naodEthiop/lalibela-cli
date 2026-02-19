@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/naodEthiop/lalibela/internal/generator"
+	"github.com/naodEthiop/lalibela-cli/internal/generator"
 )
 
 type Config struct {
@@ -149,3 +149,4 @@ func loadConfig(path string) (Config, error) {
 	}
 	return cfg, nil
 }
+
