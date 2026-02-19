@@ -1,0 +1,18 @@
+package routes
+
+import "github.com/gofiber/fiber/v2"
+
+func RegisterFiberRoutes(app *fiber.App) {
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"status": "ok"})
+	})
+
+	// Example user route
+	app.Get("/user/:id", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		return c.JSON(fiber.Map{
+			"user_id": id,
+			"name":    "John Doe",
+		})
+	})
+}

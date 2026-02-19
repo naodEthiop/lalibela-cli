@@ -1,0 +1,13 @@
+﻿package app
+
+import "{{ .ModuleName }}/internal/usecase"
+
+type Container struct {
+	HealthUseCase *usecase.HealthUseCase
+}
+
+func NewContainer() *Container {
+	return &Container{
+		HealthUseCase: usecase.NewHealthUseCase(),
+	}
+}

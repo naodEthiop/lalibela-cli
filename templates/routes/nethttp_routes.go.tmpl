@@ -1,0 +1,20 @@
+package routes
+
+import (
+	"net/http"
+)
+
+func RegisterNetHTTPRoutes() *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"status":"ok"}`))
+	})
+
+	mux.HandleFunc("/user/", func(w http.ResponseWriter, r *http.Request) {
+		id := r.URL.Path[len("/user/"):]
+		w.Write([]byte(`{"user_id":"` + id + `","name":"John Doe"}`))
+	})
+
+	return mux
+}

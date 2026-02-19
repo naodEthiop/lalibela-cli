@@ -1,0 +1,20 @@
+package routes
+
+import "github.com/labstack/echo/v4"
+
+func RegisterEchoRoutes(e *echo.Echo) {
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(200, map[string]string{
+			"status": "ok",
+		})
+	})
+
+	// Example user route
+	e.GET("/user/:id", func(c echo.Context) error {
+		id := c.Param("id")
+		return c.JSON(200, map[string]string{
+			"user_id": id,
+			"name":    "John Doe",
+		})
+	})
+}

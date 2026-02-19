@@ -1,0 +1,13 @@
+﻿package usecase
+
+import "{{ .ModuleName }}/internal/domain"
+
+type HealthUseCase struct{}
+
+func NewHealthUseCase() *HealthUseCase {
+	return &HealthUseCase{}
+}
+
+func (uc *HealthUseCase) Check() domain.HealthStatus {
+	return domain.HealthStatus{Status: "ok"}
+}

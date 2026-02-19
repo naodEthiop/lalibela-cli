@@ -1,0 +1,23 @@
+package middleware
+
+import (
+	"net/http"
+	"os"
+	"strings"
+)
+
+func JWTMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := r.Header.Get("Authorization")
+		if token == "" || !strings.HasPrefix(token, "Bearer ") {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Unauthorized"))
+			return
+		}
+
+		// TODO: Verify token with JWT_SECRET
+		_ = os.Getenv("JWT_SECRET")
+
+		next.ServeHTTP(w, r)
+	})
+}

@@ -1,0 +1,53 @@
+﻿package main
+
+import (
+	"log"
+
+	"{{ .ModuleName }}/internal/routes"
+{{ if eq .Framework "gin" }}
+	"github.com/gin-gonic/gin"
+{{ else if eq .Framework "echo" }}
+	"github.com/labstack/echo/v4"
+{{ else if eq .Framework "fiber" }}
+	"github.com/gofiber/fiber/v2"
+{{ else if eq .Framework "nethttp" }}
+	"net/http"
+{{ end }}
+)
+
+func main() {
+	log.Printf("booting {{ .ProjectName }} using {{ .Framework }}")
+{{ if .Features.Clean }}
+	log.Println("clean architecture scaffolding enabled")
+{{ end }}
+
+{{ if eq .Framework "gin" }}
+	app := gin.New()
+	app.Use(gin.Logger(), gin.Recovery())
+	routes.RegisterGinRoutes(app)
+	log.Println("server listening on :8080")
+	if err := app.Run(":8080"); err != nil {
+		log.Fatal(err)
+	}
+{{ else if eq .Framework "echo" }}
+	app := echo.New()
+	routes.RegisterEchoRoutes(app)
+	log.Println("server listening on :8080")
+	if err := app.Start(":8080"); err != nil {
+		log.Fatal(err)
+	}
+{{ else if eq .Framework "fiber" }}
+	app := fiber.New()
+	routes.RegisterFiberRoutes(app)
+	log.Println("server listening on :8080")
+	if err := app.Listen(":8080"); err != nil {
+		log.Fatal(err)
+	}
+{{ else if eq .Framework "nethttp" }}
+	mux := routes.RegisterNetHTTPRoutes()
+	log.Println("server listening on :8080")
+	if err := http.ListenAndServe(":8080", mux); err != nil {
+		log.Fatal(err)
+	}
+{{ end }}
+}
