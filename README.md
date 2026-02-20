@@ -225,7 +225,7 @@ go run ./cmd/lalibela
 ### Local PowerShell build matrix
 
 ```powershell
-./scripts/build-cross.ps1 -Version v0.1.7
+./scripts/build-cross.ps1 -Version v0.1.8
 ```
 
 Artifacts are generated in `./dist`.
@@ -241,8 +241,8 @@ goreleaser release --clean
 Use `vX.Y.Z` tags:
 
 ```bash
-git tag v0.1.7
-git push origin v0.1.7
+git tag v0.1.8
+git push origin v0.1.8
 ```
 
 Tag push triggers `.github/workflows/release.yml`, which runs GoReleaser and publishes release binaries.
@@ -252,7 +252,7 @@ Tag push triggers `.github/workflows/release.yml`, which runs GoReleaser and pub
 Use ldflags to stamp binaries:
 
 ```bash
-go build -ldflags "-X main.Version=v0.1.7 -X main.GitCommit=$(git rev-parse --short HEAD) -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o lalibela ./cmd/lalibela
+go build -ldflags "-X main.Version=v0.1.8 -X main.GitCommit=$(git rev-parse --short HEAD) -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o lalibela ./cmd/lalibela
 ```
 
 ## Contribution Guidelines

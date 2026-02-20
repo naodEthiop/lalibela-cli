@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	Version   = "0.1.7"
+	Version   = "0.1.8"
 	GitCommit = "dev"
 	BuildDate = "unknown"
 )
@@ -160,7 +160,7 @@ func printCompletionBox(projectName string) {
 	fmt.Println(ui.Green(fmt.Sprintf("Project '%s' generated successfully.", projectName)))
 	fmt.Println(ui.SectionHeader("Next steps"))
 	fmt.Printf("  cd %s\n", projectName)
-	fmt.Println("  go run main.go")
+	fmt.Println("  go run .")
 	fmt.Println(ui.Separator())
 }
 
