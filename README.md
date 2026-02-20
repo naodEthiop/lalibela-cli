@@ -9,6 +9,9 @@
 - Interactive and fast modes
 - Framework scaffolds: `gin`, `echo`, `fiber`, `net/http`
 - Optional features: `Clean`, `Logger`, `PostgreSQL`, `JWT`, `Docker`
+- Vite-style startup block in generated apps
+- Default branded `"/"` welcome page in generated apps
+- Optional removable author attribution block in generated welcome page
 - Rollback on generation failure
 - Embedded templates in release/install binaries (no external template folder required)
 - Build metadata support (`Version`, `GitCommit`, `BuildDate`)
@@ -65,6 +68,57 @@ Fast defaults:
 
 ```bash
 lalibela -name myapi -framework gin -features "Clean,Logger,JWT"
+```
+
+### Generated app startup screen
+
+After scaffolding, run the generated project:
+
+```bash
+cd myapi
+go run .
+```
+
+Expected runtime-style startup output:
+
+```text
+------------------------------------------------------------
+ LALIBELA v1.0.0  ready in 12ms
+
+ ➜  Framework:  🥃 gin
+ ➜  Mode:       development
+ ➜  Local:      http://localhost:8080
+ ➜  Network:    http://192.168.1.5:8080
+
+------------------------------------------------------------
+
+Ready to build something great.
+Press Ctrl+C to stop.
+```
+
+Note: this block is printed by the generated app, not by the `lalibela` scaffolder command itself.
+
+### Generated default welcome page
+
+Generated projects include a default `"/"` route that renders a modern dark welcome page with:
+
+- `⛪ Lalibela` branding
+- Dynamic project name (`{{ .ProjectName }}`)
+- Dynamic framework label (`{{ .Framework }}`)
+- Subtitle: `Backend scaffolding made modern.`
+- Optional author attribution section
+
+The author section lives in `internal/routes/welcome.go` in generated projects and is intentionally isolated in:
+
+- `<div class="author">...</div>`
+
+It is preceded by this comment to show it is safe to remove:
+
+```html
+<!--
+  This section is optional.
+  You can safely remove it if you do not want to show author attribution.
+-->
 ```
 
 ### Version output
@@ -133,12 +187,14 @@ internal/cli/options.go
 internal/generator/generate.go
 internal/utils/exec.go
 templates/main.go.tmpl
+templates/startup.go.tmpl
 templates/env.tmpl
 templates/logger.go.tmpl
 templates/database.go.tmpl
 templates/jwt.go.tmpl
 templates/Dockerfile.tmpl
 templates/routes/*.tmpl
+templates/routes/welcome.go.tmpl
 templates/clean/**.tmpl
 .goreleaser.yml
 .github/workflows/release.yml
