@@ -2,15 +2,14 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/fatih/color"
-	"github.com/mattn/go-colorable"
 	"github.com/naodEthiop/lalibela-cli/internal/cli"
 	"github.com/naodEthiop/lalibela-cli/internal/generator"
+	"github.com/naodEthiop/lalibela-cli/internal/ui"
 	"golang.org/x/term"
 )
 
@@ -20,22 +19,14 @@ var (
 	BuildDate = "unknown"
 )
 
-var colors = []color.Attribute{color.FgRed, color.FgYellow, color.FgGreen, color.FgCyan, color.FgMagenta}
-
-var frameworkIcons = map[string]string{
-	generator.FrameworkGin:     "[GIN]",
-	generator.FrameworkEcho:    "[ECHO]",
-	generator.FrameworkFiber:   "[FIBER]",
-	generator.FrameworkNetHTTP: "[NETHTTP]",
-}
+var errGenerationCancelled = errors.New("generation cancelled")
 
 func main() {
-	color.NoColor = false
-	color.Output = colorable.NewColorableStdout()
+	ui.InitTerminal()
 
 	opts, err := cli.ParseArgs(os.Args[1:])
 	if err != nil {
-		fmt.Println(color.RedString("Error: %v", err))
+		fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
 		os.Exit(1)
 	}
 
@@ -48,7 +39,7 @@ func main() {
 		return
 	}
 
-	printBanner()
+	ui.RenderBanner()
 
 	projectName := opts.ProjectName
 	framework := opts.Framework
@@ -57,7 +48,7 @@ func main() {
 	if !opts.FastMode && strings.TrimSpace(projectName) == "" {
 		input, err := promptTextInput("Enter project name: ")
 		if err != nil {
-			fmt.Println(color.RedString("Error: %v", err))
+			fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
 			os.Exit(1)
 		}
 		projectName = input
@@ -67,7 +58,7 @@ func main() {
 		frameworks := generator.Frameworks()
 		selection, err := promptFrameworkSelection(frameworks)
 		if err != nil {
-			fmt.Println(color.RedString("Error: %v", err))
+			fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
 			os.Exit(1)
 		}
 		framework = selection
@@ -77,53 +68,53 @@ func main() {
 		features := generator.InteractiveFeatures()
 		selection, err := promptFeatureSelection(features)
 		if err != nil {
-			fmt.Println(color.RedString("Error: %v", err))
+			fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
 			os.Exit(1)
 		}
 		normalizedFeatures, err := generator.NormalizeFeatureNames(selection)
 		if err != nil {
-			fmt.Println(color.RedString("Error: %v", err))
+			fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
 			os.Exit(1)
 		}
 		selectedFeatures = normalizedFeatures
 	}
 
 	if opts.FastMode {
-		fmt.Println(color.GreenString("Fast mode enabled with defaults"))
+		printFastModeSummary(projectName, framework, selectedFeatures)
 	}
 
+	if err := confirmOverwriteIfNeeded(projectName); err != nil {
+		if errors.Is(err, errGenerationCancelled) {
+			fmt.Println(ui.Yellow("Generation cancelled."))
+			return
+		}
+		fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
+		os.Exit(1)
+	}
+
+	fmt.Println(ui.Separator())
+	fmt.Println(ui.SectionHeader("Generation"))
+	fmt.Println(ui.Separator())
+
+	spinner := ui.NewSpinner("Generating project...")
+	spinner.Start()
 	if err := generator.GenerateProject(generator.Options{
 		ProjectName: projectName,
 		Framework:   framework,
 		Features:    selectedFeatures,
-		Status:      printProgress,
 	}); err != nil {
-		fmt.Println(color.RedString("Error: %v", err))
+		spinner.StopError("Generation failed")
+		fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
 		os.Exit(1)
 	}
 
-	printCompletionAnimation()
+	spinner.StopSuccess("Project created successfully!")
 	printCompletionBox(projectName)
-}
-
-func printBanner() {
-	fmt.Println(color.New(color.FgHiBlue).Sprint("LALIBELA - Go Backend Scaffold CLI"))
-	fmt.Println(color.New(color.FgHiBlack).Sprint("Interactive, keyboard-first scaffolding"))
-	fmt.Println()
-}
-
-func printProgress(step string, current, total int) {
-	icon := color.New(colors[current%len(colors)]).Sprint(">")
-	barWidth := 22
-	filled := current * barWidth / total
-	bar := strings.Repeat("#", filled) + strings.Repeat("-", barWidth-filled)
-	fmt.Printf("%s [%s] %d/%d %s\n", icon, color.New(color.FgHiCyan).Sprint(bar), current, total, step)
-	time.Sleep(80 * time.Millisecond)
 }
 
 func printTemplateList() {
 	catalog := generator.TemplateCatalog()
-	fmt.Println(color.New(color.FgHiBlue).Sprint("Template Catalog"))
+	fmt.Println(ui.SectionHeader("Template Catalog"))
 	fmt.Println("TEMPLATE | FRAMEWORKS | FEATURES")
 	for _, entry := range catalog {
 		fmt.Printf("%s | %s | %s\n", entry.TemplatePath, strings.Join(entry.Frameworks, ","), strings.Join(entry.Features, ","))
@@ -136,26 +127,57 @@ func printVersion() {
 	fmt.Printf("commit: %s\n", GitCommit)
 }
 
-func printCompletionAnimation() {
-	for i := 0; i < 3; i++ {
-		icon := color.New(colors[i%len(colors)]).Sprint("*")
-		fmt.Printf("%s scaffold complete\n", icon)
-		time.Sleep(70 * time.Millisecond)
+func printCompletionBox(projectName string) {
+	fmt.Println(ui.Separator())
+	fmt.Println(ui.Green(fmt.Sprintf("Project '%s' generated successfully.", projectName)))
+	fmt.Println(ui.SectionHeader("Next steps"))
+	fmt.Printf("  cd %s\n", projectName)
+	fmt.Println("  go run main.go")
+	fmt.Println(ui.Separator())
+}
+
+func printFastModeSummary(projectName, framework string, features []string) {
+	fmt.Println(ui.Separator())
+	fmt.Printf("Project:     %s\n", projectName)
+	fmt.Printf("Framework:   %s %s\n", ui.FrameworkIcon(framework), ui.FrameworkLabel(framework))
+	fmt.Println("Features:")
+	for _, feature := range features {
+		fmt.Printf("  %s %s\n", ui.Green("✓"), feature)
 	}
+	fmt.Println(ui.Separator())
 	fmt.Println()
 }
 
-func printCompletionBox(projectName string) {
-	fmt.Println(color.GreenString("==========================================="))
-	fmt.Println(color.GreenString("Project '%s' generated successfully.", projectName))
-	fmt.Println(color.GreenString("Next steps:"))
-	fmt.Println(color.GreenString("  cd %s", projectName))
-	fmt.Println(color.GreenString("  go run main.go"))
-	fmt.Println(color.GreenString("==========================================="))
+func confirmOverwriteIfNeeded(projectName string) error {
+	info, err := os.Stat(projectName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	if !info.IsDir() {
+		return fmt.Errorf("path %q already exists and is not a directory", projectName)
+	}
+
+	fmt.Println(ui.Yellow("⚠ Directory already exists."))
+	fmt.Print("Overwrite? (y/N): ")
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+	answer := strings.TrimSpace(strings.ToLower(input))
+	if answer != "y" && answer != "yes" {
+		return errGenerationCancelled
+	}
+
+	return os.RemoveAll(projectName)
 }
 
 func promptTextInput(prompt string) (string, error) {
-	fmt.Print(prompt)
+	fmt.Print(ui.Cyan(prompt))
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
 	if err != nil {
@@ -187,21 +209,20 @@ func promptFrameworkSelection(frameworks []string) (string, error) {
 	}()
 
 	render := func() {
-		fmt.Print("\033[H\033[2J")
-		fmt.Println(color.New(color.FgHiBlue).Sprint("Select Framework"))
-		fmt.Println(color.New(color.FgHiBlack).Sprint("Space/Enter=select  j/k=move"))
+		ui.ClearScreen()
+		fmt.Println(ui.Separator())
+		fmt.Println(ui.SectionHeader("Framework Selection"))
+		fmt.Println(ui.Dim("Space/Enter=select  ↑/↓=move"))
+		fmt.Println(ui.Separator())
 		fmt.Println()
 
 		for i, framework := range frameworks {
-			pointer := "  "
+			row := fmt.Sprintf("%s %-8s - %s", ui.FrameworkIcon(framework), ui.FrameworkLabel(framework), ui.FrameworkDescription(framework))
 			if i == cursor {
-				pointer = color.New(color.FgHiYellow).Sprint(">")
+				fmt.Printf("  %s %s\n", ui.Cyan(ui.Bold("➜")), ui.Style(" "+row+" ", "1", "36", "44"))
+				continue
 			}
-			label := color.New(color.FgHiCyan).Sprint(strings.ToLower(framework))
-			if icon, ok := frameworkIcons[framework]; ok {
-				label = fmt.Sprintf("%s %s", icon, label)
-			}
-			fmt.Printf("%s %s\n", pointer, label)
+			fmt.Printf("    %s\n", ui.Dim(row))
 		}
 	}
 
@@ -215,33 +236,8 @@ func promptFrameworkSelection(frameworks []string) (string, error) {
 		switch b {
 		case ' ', '\r', '\n':
 			return frameworks[cursor], nil
-		case 'j', 'J':
-			if cursor < len(frameworks)-1 {
-				cursor++
-			}
-		case 'k', 'K':
-			if cursor > 0 {
-				cursor--
-			}
-		case 0x1b:
-			next, _ := reader.ReadByte()
-			if next == '[' {
-				dir, _ := reader.ReadByte()
-				if dir == 'A' && cursor > 0 {
-					cursor--
-				}
-				if dir == 'B' && cursor < len(frameworks)-1 {
-					cursor++
-				}
-			}
-		case 0x00, 0xE0:
-			dir, _ := reader.ReadByte()
-			if dir == 72 && cursor > 0 {
-				cursor--
-			}
-			if dir == 80 && cursor < len(frameworks)-1 {
-				cursor++
-			}
+		default:
+			handleArrowNavigation(b, reader, &cursor, len(frameworks))
 		}
 		render()
 	}
@@ -267,21 +263,23 @@ func promptFeatureSelection(features []string) ([]string, error) {
 	}()
 
 	render := func() {
-		fmt.Print("\033[H\033[2J")
-		fmt.Println(color.New(color.FgHiBlue).Sprint("Optional Features"))
-		fmt.Println(color.New(color.FgHiBlack).Sprint("Space=toggle+next  Enter=finish  j/k=move  a=all  n=none"))
+		ui.ClearScreen()
+		fmt.Println(ui.Separator())
+		fmt.Println(ui.SectionHeader("Feature Selection"))
+		fmt.Println(ui.Dim("Space=toggle+next  Enter=finish  ↑/↓=move  a=all  n=none"))
+		fmt.Println(ui.Separator())
 		fmt.Println()
 
 		for i, feature := range features {
-			pointer := "  "
-			if i == cursor {
-				pointer = color.New(color.FgHiYellow).Sprint(">")
-			}
-			check := color.New(color.FgHiBlack).Sprint("[ ]")
+			check := ui.Dim("[ ]")
 			if selected[i] {
-				check = color.New(color.FgHiGreen).Sprint("[x]")
+				check = ui.Green("[✓]")
 			}
-			fmt.Printf("%s %s %s\n", pointer, check, color.New(color.FgHiCyan).Sprint(feature))
+			if i == cursor {
+				fmt.Printf("  %s %s %s\n", ui.Cyan(ui.Bold("➜")), check, ui.Style(feature, "1", "36"))
+				continue
+			}
+			fmt.Printf("    %s %s\n", check, ui.Dim(feature))
 		}
 	}
 
@@ -311,14 +309,6 @@ func promptFeatureSelection(features []string) ([]string, error) {
 			cursor++
 		case '\r', '\n':
 			return result(), nil
-		case 'j', 'J':
-			if cursor < len(features)-1 {
-				cursor++
-			}
-		case 'k', 'K':
-			if cursor > 0 {
-				cursor--
-			}
 		case 'a', 'A':
 			for i := range selected {
 				selected[i] = true
@@ -329,28 +319,78 @@ func promptFeatureSelection(features []string) ([]string, error) {
 				selected[i] = false
 			}
 			return result(), nil
-		case 0x1b:
-			next, _ := reader.ReadByte()
-			if next == '[' {
-				dir, _ := reader.ReadByte()
-				if dir == 'A' && cursor > 0 {
-					cursor--
-				}
-				if dir == 'B' && cursor < len(features)-1 {
-					cursor++
-				}
-			}
-		case 0x00, 0xE0:
-			dir, _ := reader.ReadByte()
-			if dir == 72 && cursor > 0 {
-				cursor--
-			}
-			if dir == 80 && cursor < len(features)-1 {
-				cursor++
-			}
+		default:
+			handleArrowNavigation(b, reader, &cursor, len(features))
 		}
 
 		render()
 	}
 }
 
+func handleArrowNavigation(first byte, reader *bufio.Reader, cursor *int, total int) {
+	switch first {
+	case 0x00, 0xE0:
+		dir, err := reader.ReadByte()
+		if err != nil {
+			return
+		}
+		if dir == 72 && *cursor > 0 {
+			*cursor--
+		}
+		if dir == 80 && *cursor < total-1 {
+			*cursor++
+		}
+	case 0x1b:
+		next, err := reader.ReadByte()
+		if err != nil {
+			return
+		}
+		if next != '[' && next != 'O' {
+			return
+		}
+
+		for {
+			dir, err := reader.ReadByte()
+			if err != nil {
+				return
+			}
+			if dir == 'A' {
+				if *cursor > 0 {
+					*cursor--
+				}
+				return
+			}
+			if dir == 'B' {
+				if *cursor < total-1 {
+					*cursor++
+				}
+				return
+			}
+			if dir >= '@' && dir <= '~' {
+				return
+			}
+		}
+	case '[', 'O':
+		for {
+			dir, err := reader.ReadByte()
+			if err != nil {
+				return
+			}
+			if dir == 'A' {
+				if *cursor > 0 {
+					*cursor--
+				}
+				return
+			}
+			if dir == 'B' {
+				if *cursor < total-1 {
+					*cursor++
+				}
+				return
+			}
+			if dir >= '@' && dir <= '~' {
+				return
+			}
+		}
+	}
+}
