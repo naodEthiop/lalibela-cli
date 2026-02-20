@@ -195,7 +195,8 @@ func FeatureSetFromNames(features []string) FeatureSet {
 func TemplateCatalog() []TemplateInfo {
 	return []TemplateInfo{
 		{TemplatePath: "templates/env.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
-		{TemplatePath: "templates/index.html.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
+		{TemplatePath: "index.html", Frameworks: []string{"all"}, Features: []string{"base"}},
+		{TemplatePath: "lalibela2.webp", Frameworks: []string{"all"}, Features: []string{"base"}},
 		{TemplatePath: "templates/startup.go.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
 		{TemplatePath: "templates/main.go.tmpl", Frameworks: Frameworks(), Features: []string{"base"}},
 		{TemplatePath: "templates/routes/welcome.go.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
@@ -387,7 +388,7 @@ func generateBaseTemplates(ctx *generationContext) error {
 		outputPath   string
 	}{
 		{templatePath: "templates/env.tmpl", outputPath: ".env"},
-		{templatePath: "templates/index.html.tmpl", outputPath: filepath.Join("templates", "index.html")},
+		{templatePath: "index.html", outputPath: filepath.Join("templates", "index.html")},
 		{templatePath: "templates/startup.go.tmpl", outputPath: "startup.go"},
 		{templatePath: "templates/routes/welcome.go.tmpl", outputPath: filepath.Join("internal", "routes", "welcome.go")},
 	}
@@ -397,6 +398,11 @@ func generateBaseTemplates(ctx *generationContext) error {
 			return err
 		}
 	}
+
+	if err := copyProjectAsset(ctx, "lalibela2.webp", filepath.Join("templates", "lalibela2.webp")); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -480,6 +486,22 @@ func renderProjectTemplate(ctx *generationContext, templateRelativePath, outputR
 		filepath.Join(ctx.projectPath, outputRelativePath),
 		ctx.data,
 	)
+}
+
+func copyProjectAsset(ctx *generationContext, sourceRelativePath, outputRelativePath string) error {
+	sourceData, err := fs.ReadFile(ctx.templateFS, sourceRelativePath)
+	if err != nil {
+		return fmt.Errorf("failed reading asset %s: %v", sourceRelativePath, err)
+	}
+
+	outputPath := filepath.Join(ctx.projectPath, outputRelativePath)
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
+		return fmt.Errorf("failed creating parent directory for %s: %v", outputPath, err)
+	}
+	if err := os.WriteFile(outputPath, sourceData, 0o644); err != nil {
+		return fmt.Errorf("failed writing asset %s: %v", outputPath, err)
+	}
+	return nil
 }
 
 func renderTemplateFromFS(templateFS fs.FS, templatePath, outputPath string, data TemplateData) error {

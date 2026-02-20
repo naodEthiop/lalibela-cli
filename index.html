@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .ProjectName }} — Lalibela</title>
+    <style>
+        :root {
+            /* Colors sampled from the Lalibela sunset image */
+            --bg-deep: #0d0b0a;
+            --bg-surface: #1a1614;
+            --accent: #d4a373; /* Warm stone gold */
+            --accent-glow: rgba(212, 163, 115, 0.15);
+            --fg: #f1f1f1;
+            --muted: #a09990;
+            --border: rgba(255, 255, 255, 0.08);
+            --font: 'Inter', -apple-system, system-ui, sans-serif;
+            --mono: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--fg);
+            font-family: var(--font);
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Ambient background blending with image tones */
+        .ambient-glow {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2;
+            background: 
+                radial-gradient(circle at 20% 20%, #2a221b 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, #151210 0%, var(--bg-deep) 50%);
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            padding: 0 2rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Compressed Header Navigation */
+        nav {
+            padding: 1.5rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: var(--accent);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Hero Section - Space Decreased */
+        .hero {
+            padding: 3rem 0 2rem 0;
+            text-align: left;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 850;
+            letter-spacing: -0.05em;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to bottom, #fff 50%, var(--accent) 150%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            color: var(--muted);
+            max-width: 600px;
+        }
+
+        /* Advanced Visual Layout: Tighter Integration */
+        .stage {
+            position: relative;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            align-items: center;
+            margin: 1.5rem 0 4rem 0; /* Reduced space from above */
+        }
+
+        .image-viewport {
+            position: relative;
+            height: 480px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .image-viewport img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: saturate(1.1) brightness(0.85);
+        }
+
+        /* Gradient mask to blend image into UI */
+        .image-viewport::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, transparent 60%, var(--bg-deep) 100%),
+                        linear-gradient(to top, var(--bg-deep) 0%, transparent 30%);
+        }
+
+        /* Pro Terminal Styling */
+        .terminal {
+            background: rgba(22, 19, 17, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 163, 115, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6), 0 0 20px var(--accent-glow);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateX(-40px); /* Overlap image slightly */
+        }
+
+        .terminal:hover {
+            transform: translateX(-45px) translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .terminal-header {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #333; }
+
+        /* Typewriter Animation */
+        .typewriter {
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            color: #dcdcdc;
+            line-height: 1.6;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background: var(--accent);
+            margin-left: 4px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Feature Grid - More Compact */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+        }
+
+        .card {
+            padding: 1.5rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: 0.2s;
+        }
+
+        .card:hover { border-color: var(--accent); background: #221e1b; }
+        .card h3 { font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; }
+        .card p { font-size: 0.85rem; color: var(--muted); }
+
+        /* Subtle Footer */
+        .author {
+            padding: 3rem 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            font-size: 0.7rem;
+            color: #444;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .author a { color: var(--muted); text-decoration: none; }
+
+        @media (max-width: 900px) {
+            .stage { grid-template-columns: 1fr; }
+            .terminal { transform: translateY(-60px); width: 100%; margin: 0; }
+            .features { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-glow"></div>
+
+    <div class="container">
+        <nav>
+            <div class="brand">⛪ Lalibela</div>
+            <div style="font-size: 0.7rem; color: var(--muted);">v1.0.4 stable</div>
+        </nav>
+
+        <section class="hero">
+            <h1>{{ .ProjectName }}</h1>
+            <p>Modern Go scaffolding. Hewn from best practices, <br>built for the next generation of <strong>{{ .Framework }}</strong> backends.</p>
+        </section>
+
+        <section class="stage">
+            <div class="image-viewport">
+                <img src="lalibela2.webp" alt="Lalibela Monolith">
+            </div>
+
+            <div class="terminal">
+                <div class="terminal-header">
+                    <div class="dot" style="background:#ff5f57"></div>
+                    <div class="dot" style="background:#febc2e"></div>
+                    <div class="dot" style="background:#28c840"></div>
+                </div>
+                <div class="typewriter">
+                    <div><span style="color:var(--accent)">➜</span> lalibela init {{ .ProjectName }}</div>
+                    <div style="color: var(--muted); margin-top: 10px;">[1/3] Sculpting architecture...</div>
+                    <div style="color: var(--muted);">[2/3] Hardening Go modules...</div>
+                    <div style="color: #4ade80; margin-top: 10px;">✓ Success: Project carved.</div>
+                    <div style="margin-top: 4px;">Listening on :8080<span class="cursor"></span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="card">
+                <h3>⚡ Fast Setup</h3>
+                <p>Bootstrap production-ready APIs in milliseconds.</p>
+            </div>
+            <div class="card">
+                <h3>🧱 Monolith Core</h3>
+                <p>Architecture inspired by the strength of stone.</p>
+            </div>
+            <div class="card">
+                <h3>🐳 Cloud Native</h3>
+                <p>Fully containerized and CI/CD ready by default.</p>
+            </div>
+        </section>
+
+        <footer class="author">
+            <p style="margin-bottom: 5px;">Created by <strong>NaodEthiop</strong> | Software Engineer</p>
+            <p><a href="https://github.com/NaodEthiop">github.com/NaodEthiop</a></p>
+        </footer>
+    </div>
+
+</body>
+</html>
