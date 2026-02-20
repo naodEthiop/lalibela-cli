@@ -22,6 +22,19 @@
 go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
 ```
 
+If your machine still installs an older cached build, force direct fetch:
+
+```bash
+GOPROXY=direct go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
+```
+
+PowerShell:
+
+```powershell
+$env:GOPROXY='direct'
+go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
+```
+
 ### Download prebuilt binaries
 
 1. Open GitHub Releases: https://github.com/naodEthiop/lalibela-cli/releases
@@ -151,7 +164,7 @@ go run ./cmd/lalibela
 ### Local PowerShell build matrix
 
 ```powershell
-./scripts/build-cross.ps1 -Version v0.1.1
+./scripts/build-cross.ps1 -Version v0.1.3
 ```
 
 Artifacts are generated in `./dist`.
@@ -167,8 +180,8 @@ goreleaser release --clean
 Use `vX.Y.Z` tags:
 
 ```bash
-git tag v0.1.1
-git push origin v0.1.1
+git tag v0.1.3
+git push origin v0.1.3
 ```
 
 Tag push triggers `.github/workflows/release.yml`, which runs GoReleaser and publishes release binaries.
@@ -178,7 +191,7 @@ Tag push triggers `.github/workflows/release.yml`, which runs GoReleaser and pub
 Use ldflags to stamp binaries:
 
 ```bash
-go build -ldflags "-X main.Version=v0.1.1 -X main.GitCommit=$(git rev-parse --short HEAD) -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o lalibela ./cmd/lalibela
+go build -ldflags "-X main.Version=v0.1.3 -X main.GitCommit=$(git rev-parse --short HEAD) -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o lalibela ./cmd/lalibela
 ```
 
 ## Contribution Guidelines
