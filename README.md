@@ -1,7 +1,7 @@
-﻿# Lalibela CLI
+# lalibela-cli
 ![Project Logo](/logo.png)
 
-Lalibela is a keyboard-first Go CLI that scaffolds backend projects.
+`lalibela-cli` is the repository for **Lalibela**, a keyboard-first Go CLI (`lalibela`) that scaffolds backend projects.
 
 ## Highlights
 
@@ -18,12 +18,12 @@ Lalibela is a keyboard-first Go CLI that scaffolds backend projects.
 ### Install latest with Go
 
 ```bash
-go install github.com/<naodEthiop>/lalibela@latest
+go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
 ```
 
 ### Download prebuilt binaries
 
-1. Open GitHub Releases for this repo.
+1. Open GitHub Releases: https://github.com/naodEthiop/lalibela-cli/releases
 2. Download the archive for your OS/arch.
 3. Add the extracted binary to your `PATH`.
 
@@ -62,7 +62,7 @@ lalibela -version
 Expected format:
 
 ```text
-lalibela vX.Y.Z
+lalibela X.Y.Z
 build date: 2026-02-19T12:00:00Z
 commit: a1b2c3d
 ```
@@ -191,3 +191,4 @@ go build -ldflags "-X main.Version=v0.1.0 -X main.GitCommit=$(git rev-parse --sh
 ## License
 
 MIT
+
