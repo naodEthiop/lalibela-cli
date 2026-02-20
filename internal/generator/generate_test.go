@@ -125,6 +125,46 @@ func TestSetupDependenciesError(t *testing.T) {
 	}
 }
 
+func TestGenerateProjectUsesEmbeddedTemplates(t *testing.T) {
+	tempDir := t.TempDir()
+	originalWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	defer func() {
+		_ = os.Chdir(originalWD)
+	}()
+
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+
+	projectName := "embedded-demo"
+	err = GenerateProject(Options{
+		ProjectName: projectName,
+		Framework:   FrameworkGin,
+		Features:    []string{FeatureLogger},
+		Runner: func(string, string, ...string) error {
+			return nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("GenerateProject should use embedded templates, got error: %v", err)
+	}
+
+	expectedFiles := []string{
+		filepath.Join(tempDir, projectName, ".env"),
+		filepath.Join(tempDir, projectName, "main.go"),
+		filepath.Join(tempDir, projectName, "internal", "routes", "routes.go"),
+		filepath.Join(tempDir, projectName, "config", "logger.go"),
+	}
+	for _, p := range expectedFiles {
+		if _, statErr := os.Stat(p); statErr != nil {
+			t.Fatalf("expected generated file %s: %v", p, statErr)
+		}
+	}
+}
+
 func TestGenerateProjectRollbackOnFailure(t *testing.T) {
 	tempDir := t.TempDir()
 	originalWD, err := os.Getwd()

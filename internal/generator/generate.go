@@ -3,12 +3,14 @@ package generator
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"text/template"
 
+	lalibelacli "github.com/naodEthiop/lalibela-cli"
 	"github.com/naodEthiop/lalibela-cli/internal/utils"
 )
 
@@ -110,12 +112,13 @@ type Options struct {
 	Framework   string
 	Features    []string
 	RootDir     string
+	TemplateFS  fs.FS
 	Runner      CommandRunner
 	Status      StatusFunc
 }
 
 type generationContext struct {
-	rootDir     string
+	templateFS  fs.FS
 	projectPath string
 	data        TemplateData
 	runner      CommandRunner
@@ -254,11 +257,16 @@ func GenerateProject(opts Options) (retErr error) {
 	}
 	opts.Features = normalizedFeatures
 
-	rootDir := opts.RootDir
-	if rootDir == "" {
-		rootDir, err = getRootDir()
-		if err != nil {
-			return err
+	templateFS := opts.TemplateFS
+	if templateFS == nil {
+		rootDir := opts.RootDir
+		if strings.TrimSpace(rootDir) == "" {
+			rootDir, err = getRootDir()
+		}
+		if err == nil && strings.TrimSpace(rootDir) != "" {
+			templateFS = os.DirFS(rootDir)
+		} else {
+			templateFS = lalibelacli.EmbeddedTemplates
 		}
 	}
 
@@ -293,7 +301,7 @@ func GenerateProject(opts Options) (retErr error) {
 	}
 
 	ctx := &generationContext{
-		rootDir:     rootDir,
+		templateFS:  templateFS,
 		projectPath: projectPath,
 		data:        BuildTemplateData(opts.ProjectName, opts.Framework, opts.Features),
 		runner:      runner,
@@ -448,11 +456,34 @@ func setupDependencies(ctx *generationContext) error {
 }
 
 func renderProjectTemplate(ctx *generationContext, templateRelativePath, outputRelativePath string) error {
-	return renderTemplate(
-		filepath.Join(ctx.rootDir, templateRelativePath),
+	return renderTemplateFromFS(
+		ctx.templateFS,
+		templateRelativePath,
 		filepath.Join(ctx.projectPath, outputRelativePath),
 		ctx.data,
 	)
+}
+
+func renderTemplateFromFS(templateFS fs.FS, templatePath, outputPath string, data TemplateData) error {
+	tmpl, err := template.ParseFS(templateFS, templatePath)
+	if err != nil {
+		return fmt.Errorf("failed parsing template %s: %v", templatePath, err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
+		return fmt.Errorf("failed creating parent directory for %s: %v", outputPath, err)
+	}
+
+	file, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("failed creating file %s: %v", outputPath, err)
+	}
+	defer file.Close()
+
+	if err := tmpl.Execute(file, data); err != nil {
+		return fmt.Errorf("failed executing template %s: %v", templatePath, err)
+	}
+	return nil
 }
 
 func renderTemplate(templatePath, outputPath string, data TemplateData) error {
@@ -476,4 +507,3 @@ func renderTemplate(templatePath, outputPath string, data TemplateData) error {
 	}
 	return nil
 }
-

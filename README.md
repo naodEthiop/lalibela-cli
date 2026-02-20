@@ -10,6 +10,7 @@
 - Framework scaffolds: `gin`, `echo`, `fiber`, `net/http`
 - Optional features: `Clean`, `Logger`, `PostgreSQL`, `JWT`, `Docker`
 - Rollback on generation failure
+- Embedded templates in release/install binaries (no external template folder required)
 - Build metadata support (`Version`, `GitCommit`, `BuildDate`)
 - Template catalog output via `-template-list`
 
