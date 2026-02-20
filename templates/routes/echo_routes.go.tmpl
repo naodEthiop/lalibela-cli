@@ -4,7 +4,10 @@ import "github.com/labstack/echo/v4"
 
 func RegisterEchoRoutes(e *echo.Echo) {
 	e.GET("/", func(c echo.Context) error {
-		return c.HTML(200, welcomePageHTML)
+		return c.File("templates/index.html")
+	})
+	e.GET("/lalibela2.webp", func(c echo.Context) error {
+		return c.File("templates/lalibela2.webp")
 	})
 
 	e.GET("/health", func(c echo.Context) error {

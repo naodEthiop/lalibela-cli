@@ -199,7 +199,6 @@ func TemplateCatalog() []TemplateInfo {
 		{TemplatePath: "lalibela2.webp", Frameworks: []string{"all"}, Features: []string{"base"}},
 		{TemplatePath: "templates/startup.go.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
 		{TemplatePath: "templates/main.go.tmpl", Frameworks: Frameworks(), Features: []string{"base"}},
-		{TemplatePath: "templates/routes/welcome.go.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
 		{TemplatePath: "templates/routes/gin_routes.go.tmpl", Frameworks: []string{FrameworkGin}, Features: []string{"base"}},
 		{TemplatePath: "templates/routes/echo_routes.go.tmpl", Frameworks: []string{FrameworkEcho}, Features: []string{"base"}},
 		{TemplatePath: "templates/routes/fiber_routes.go.tmpl", Frameworks: []string{FrameworkFiber}, Features: []string{"base"}},
@@ -390,7 +389,6 @@ func generateBaseTemplates(ctx *generationContext) error {
 		{templatePath: "templates/env.tmpl", outputPath: ".env"},
 		{templatePath: "index.html", outputPath: filepath.Join("templates", "index.html")},
 		{templatePath: "templates/startup.go.tmpl", outputPath: "startup.go"},
-		{templatePath: "templates/routes/welcome.go.tmpl", outputPath: filepath.Join("internal", "routes", "welcome.go")},
 	}
 
 	for _, item := range base {

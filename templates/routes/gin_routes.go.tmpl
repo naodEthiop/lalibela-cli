@@ -4,8 +4,9 @@ import "github.com/gin-gonic/gin"
 
 func RegisterGinRoutes(r *gin.Engine) {
 	r.GET("/", func(c *gin.Context) {
-		c.Data(200, "text/html; charset=utf-8", []byte(welcomePageHTML))
+		c.File("templates/index.html")
 	})
+	r.StaticFile("/lalibela2.webp", "templates/lalibela2.webp")
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{

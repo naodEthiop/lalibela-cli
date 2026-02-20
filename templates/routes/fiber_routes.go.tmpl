@@ -4,8 +4,10 @@ import "github.com/gofiber/fiber/v2"
 
 func RegisterFiberRoutes(app *fiber.App) {
 	app.Get("/", func(c *fiber.Ctx) error {
-		c.Set("Content-Type", "text/html; charset=utf-8")
-		return c.Status(200).SendString(welcomePageHTML)
+		return c.SendFile("templates/index.html")
+	})
+	app.Get("/lalibela2.webp", func(c *fiber.Ctx) error {
+		return c.SendFile("templates/lalibela2.webp")
 	})
 
 	app.Get("/health", func(c *fiber.Ctx) error {

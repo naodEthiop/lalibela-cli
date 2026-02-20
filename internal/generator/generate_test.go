@@ -159,7 +159,6 @@ func TestGenerateProjectUsesEmbeddedTemplates(t *testing.T) {
 		filepath.Join(tempDir, projectName, "main.go"),
 		filepath.Join(tempDir, projectName, "startup.go"),
 		filepath.Join(tempDir, projectName, "internal", "routes", "routes.go"),
-		filepath.Join(tempDir, projectName, "internal", "routes", "welcome.go"),
 		filepath.Join(tempDir, projectName, "config", "logger.go"),
 	}
 	for _, p := range expectedFiles {
@@ -198,7 +197,6 @@ func TestGenerateProjectRollbackOnFailure(t *testing.T) {
 	writeTemplate("lalibela2.webp", "fake-image-bytes")
 	writeTemplate("templates/startup.go.tmpl", "package main")
 	writeTemplate("templates/main.go.tmpl", "package main")
-	writeTemplate("templates/routes/welcome.go.tmpl", "package routes")
 	writeTemplate("templates/routes/gin_routes.go.tmpl", "package routes")
 
 	projectName := "rollback-demo"
