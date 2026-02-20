@@ -155,7 +155,9 @@ func TestGenerateProjectUsesEmbeddedTemplates(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(tempDir, projectName, ".env"),
 		filepath.Join(tempDir, projectName, "main.go"),
+		filepath.Join(tempDir, projectName, "startup.go"),
 		filepath.Join(tempDir, projectName, "internal", "routes", "routes.go"),
+		filepath.Join(tempDir, projectName, "internal", "routes", "welcome.go"),
 		filepath.Join(tempDir, projectName, "config", "logger.go"),
 	}
 	for _, p := range expectedFiles {
@@ -190,7 +192,9 @@ func TestGenerateProjectRollbackOnFailure(t *testing.T) {
 	}
 
 	writeTemplate("templates/env.tmpl", "PORT=8080")
+	writeTemplate("templates/startup.go.tmpl", "package main")
 	writeTemplate("templates/main.go.tmpl", "package main")
+	writeTemplate("templates/routes/welcome.go.tmpl", "package routes")
 	writeTemplate("templates/routes/gin_routes.go.tmpl", "package routes")
 
 	projectName := "rollback-demo"

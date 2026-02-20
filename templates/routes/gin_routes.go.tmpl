@@ -3,6 +3,10 @@ package routes
 import "github.com/gin-gonic/gin"
 
 func RegisterGinRoutes(r *gin.Engine) {
+	r.GET("/", func(c *gin.Context) {
+		c.Data(200, "text/html; charset=utf-8", []byte(welcomePageHTML))
+	})
+
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status": "ok",

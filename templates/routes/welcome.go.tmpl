@@ -1,0 +1,89 @@
+package routes
+
+const welcomePageHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ .ProjectName }} | Lalibela</title>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      padding: 24px;
+    }
+    .card {
+      width: min(720px, 100%);
+      text-align: center;
+      border: 1px solid #1e293b;
+      border-radius: 16px;
+      padding: 40px 28px;
+      background: rgba(15, 23, 42, 0.92);
+      box-shadow: 0 20px 50px rgba(2, 6, 23, 0.45);
+    }
+    .brand {
+      margin: 0;
+      font-size: clamp(26px, 4vw, 34px);
+      letter-spacing: 0.02em;
+      font-weight: 700;
+    }
+    .project {
+      margin: 14px 0 4px;
+      font-size: clamp(34px, 7vw, 56px);
+      line-height: 1.1;
+      font-weight: 800;
+    }
+    .framework {
+      margin: 0;
+      font-size: 18px;
+      color: #93c5fd;
+    }
+    .subtitle {
+      margin: 18px 0 0;
+      font-size: 18px;
+      color: #cbd5e1;
+    }
+    .author {
+      margin-top: 30px;
+      padding-top: 16px;
+      border-top: 1px dashed #334155;
+      color: #94a3b8;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .author a {
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1 class="brand">&#9962; Lalibela</h1>
+    <h2 class="project">{{ .ProjectName }}</h2>
+    <p class="framework">Powered by {{ if eq .Framework "nethttp" }}net/http{{ else }}{{ .Framework }}{{ end }}</p>
+    <p class="subtitle">Backend scaffolding made modern.</p>
+
+    <!--
+      This section is optional.
+      You can safely remove it if you do not want to show author attribution.
+    -->
+    <div class="author">
+      <div>Built with Lalibela</div>
+      <div>Created by NaodEthiop | Software Engineer</div>
+      <div>GitHub: <a href="https://github.com/NaodEthiop">https://github.com/NaodEthiop</a></div>
+    </div>
+  </main>
+</body>
+</html>
+`

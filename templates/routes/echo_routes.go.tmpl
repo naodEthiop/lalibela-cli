@@ -3,6 +3,10 @@ package routes
 import "github.com/labstack/echo/v4"
 
 func RegisterEchoRoutes(e *echo.Echo) {
+	e.GET("/", func(c echo.Context) error {
+		return c.HTML(200, welcomePageHTML)
+	})
+
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(200, map[string]string{
 			"status": "ok",

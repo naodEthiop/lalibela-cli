@@ -1,0 +1,94 @@
+package main
+
+import (
+	"fmt"
+	"net"
+	"strings"
+	"time"
+)
+
+// renderStartupBlock prints a concise Vite-style startup summary.
+func renderStartupBlock(framework string, port int, duration time.Duration) {
+	const separator = "------------------------------------------------------------"
+	arrow := "\u279C"
+	durationMS := duration.Milliseconds()
+	if durationMS < 1 {
+		durationMS = 1
+	}
+
+	localURL := fmt.Sprintf("http://localhost:%d", port)
+	networkURL := "unavailable"
+	if ip := getLocalIP(); ip != "" {
+		networkURL = fmt.Sprintf("http://%s:%d", ip, port)
+	}
+
+	fmt.Println()
+	fmt.Println(separator)
+	fmt.Printf(" LALIBELA v1.0.0  ready in %dms\n\n", durationMS)
+	fmt.Printf(" %s  Framework:  %s\n", arrow, frameworkLabel(framework))
+	fmt.Printf(" %s  Mode:       development\n", arrow)
+	fmt.Printf(" %s  Local:      %s\n", arrow, localURL)
+	fmt.Printf(" %s  Network:    %s\n", arrow, networkURL)
+	fmt.Println()
+	fmt.Println(separator)
+	fmt.Println()
+	fmt.Println("Ready to build something great.")
+	fmt.Println("Press Ctrl+C to stop.")
+}
+
+// getLocalIP returns the first non-loopback IPv4 address, if available.
+func getLocalIP() string {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return ""
+	}
+
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			var ip net.IP
+			switch value := addr.(type) {
+			case *net.IPNet:
+				ip = value.IP
+			case *net.IPAddr:
+				ip = value.IP
+			}
+
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+
+			ipv4 := ip.To4()
+			if ipv4 == nil {
+				continue
+			}
+
+			return ipv4.String()
+		}
+	}
+
+	return ""
+}
+
+func frameworkLabel(framework string) string {
+	switch strings.ToLower(strings.TrimSpace(framework)) {
+	case "gin":
+		return "\U0001F943 gin"
+	case "echo":
+		return "\U0001F5E3 echo"
+	case "fiber":
+		return "\u26A1 fiber"
+	case "nethttp":
+		return "\U0001F310 net/http"
+	default:
+		return framework
+	}
+}

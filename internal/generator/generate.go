@@ -195,7 +195,9 @@ func FeatureSetFromNames(features []string) FeatureSet {
 func TemplateCatalog() []TemplateInfo {
 	return []TemplateInfo{
 		{TemplatePath: "templates/env.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
+		{TemplatePath: "templates/startup.go.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
 		{TemplatePath: "templates/main.go.tmpl", Frameworks: Frameworks(), Features: []string{"base"}},
+		{TemplatePath: "templates/routes/welcome.go.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
 		{TemplatePath: "templates/routes/gin_routes.go.tmpl", Frameworks: []string{FrameworkGin}, Features: []string{"base"}},
 		{TemplatePath: "templates/routes/echo_routes.go.tmpl", Frameworks: []string{FrameworkEcho}, Features: []string{"base"}},
 		{TemplatePath: "templates/routes/fiber_routes.go.tmpl", Frameworks: []string{FrameworkFiber}, Features: []string{"base"}},
@@ -379,7 +381,21 @@ func createProjectDirectories(ctx *generationContext) error {
 }
 
 func generateBaseTemplates(ctx *generationContext) error {
-	return renderProjectTemplate(ctx, "templates/env.tmpl", ".env")
+	base := []struct {
+		templatePath string
+		outputPath   string
+	}{
+		{templatePath: "templates/env.tmpl", outputPath: ".env"},
+		{templatePath: "templates/startup.go.tmpl", outputPath: "startup.go"},
+		{templatePath: "templates/routes/welcome.go.tmpl", outputPath: filepath.Join("internal", "routes", "welcome.go")},
+	}
+
+	for _, item := range base {
+		if err := renderProjectTemplate(ctx, item.templatePath, item.outputPath); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func generateGinScaffold(ctx *generationContext) error {
