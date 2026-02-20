@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -25,6 +26,7 @@ type Options struct {
 	Features         []string
 	FeaturesProvided bool
 	FastMode         bool
+	ShowHelp         bool
 	ShowVersion      bool
 	ShowTemplateList bool
 	ConfigPath       string
@@ -32,11 +34,16 @@ type Options struct {
 
 func ParseArgs(args []string) (Options, error) {
 	var opts Options
+	if len(args) > 0 && strings.EqualFold(strings.TrimSpace(args[0]), "help") {
+		return Options{ShowHelp: true}, nil
+	}
 
 	fs := flag.NewFlagSet("lalibela", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 
 	fast := fs.Bool("fast", false, "Fast mode: skip prompts and use defaults")
+	showHelp := fs.Bool("help", false, "Show help and exit")
+	showHelpShort := fs.Bool("h", false, "Show help and exit")
 	project := fs.String("name", "", "Project name")
 	framework := fs.String("framework", "", "Framework: gin|echo|fiber|nethttp")
 	features := fs.String("features", "", "Comma-separated features (Clean,Logger,PostgreSQL,JWT,Docker)")
@@ -45,14 +52,18 @@ func ParseArgs(args []string) (Options, error) {
 	configPath := fs.String("config", "", "Optional config file path (defaults to ~/.lalibela.json)")
 
 	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return Options{ShowHelp: true}, nil
+		}
 		return opts, err
 	}
 
 	opts = Options{
+		ShowHelp:         *showHelp || *showHelpShort,
 		ShowVersion:      *showVersion,
 		ShowTemplateList: *templateList,
 	}
-	if opts.ShowVersion || opts.ShowTemplateList {
+	if opts.ShowHelp || opts.ShowVersion || opts.ShowTemplateList {
 		return opts, nil
 	}
 
@@ -149,4 +160,3 @@ func loadConfig(path string) (Config, error) {
 	}
 	return cfg, nil
 }
-

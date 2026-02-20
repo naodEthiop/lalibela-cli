@@ -1,8 +1,12 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
+	"net"
+	"os/exec"
+	"runtime"
 	"time"
 
 	"{{ .ModuleName }}/internal/routes"
@@ -10,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 {{ else if eq .Framework "echo" }}
 	"github.com/labstack/echo/v4"
+	"net/http"
 {{ else if eq .Framework "fiber" }}
 	"github.com/gofiber/fiber/v2"
 {{ else if eq .Framework "nethttp" }}
@@ -23,6 +28,49 @@ import (
 )
 
 const serverPort = 8080
+
+type runtimeOptions struct {
+	Open bool
+}
+
+func parseRuntimeOptions() runtimeOptions {
+	open := flag.Bool("open", false, "Open browser after server starts")
+	flag.Parse()
+	return runtimeOptions{Open: *open}
+}
+
+func openBrowser(targetURL string) error {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "linux":
+		cmd = exec.Command("xdg-open", targetURL)
+	case "darwin":
+		cmd = exec.Command("open", targetURL)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", targetURL)
+	default:
+		return fmt.Errorf("unsupported platform %q", runtime.GOOS)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("open browser command failed: %w", err)
+	}
+	return nil
+}
+
+func openBrowserIfRequested(open bool, port int) {
+	if !open {
+		return
+	}
+
+	targetURL := fmt.Sprintf("http://localhost:%d", port)
+	go func() {
+		if err := openBrowser(targetURL); err != nil {
+			log.Printf("browser auto-open skipped: %v", err)
+		}
+	}()
+}
 
 {{ if eq .Framework "nethttp" }}
 const (
@@ -133,6 +181,7 @@ func resolvePageData() PageData {
 {{ end }}
 
 func main() {
+	opts := parseRuntimeOptions()
 	bootStart := time.Now()
 {{ if eq .Framework "nethttp" }}
 	templatePath := resolveTemplatePath()
@@ -143,32 +192,47 @@ func main() {
 
 	pageData := resolvePageData()
 	port := resolvePort()
-	addr := fmt.Sprintf(":%d", port)
 {{ else }}
-	addr := fmt.Sprintf(":%d", serverPort)
+	port := serverPort
 {{ end }}
+
+	addr := fmt.Sprintf(":%d", port)
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 {{ if eq .Framework "gin" }}
 	gin.SetMode(gin.ReleaseMode)
 	app := gin.New()
 	app.Use(gin.Recovery())
 	routes.RegisterGinRoutes(app)
-	renderStartupBlock("{{ .Framework }}", serverPort, time.Since(bootStart))
-	if err := app.Run(addr); err != nil {
+
+	renderStartupBlock("{{ .Framework }}", port, time.Since(bootStart))
+	openBrowserIfRequested(opts.Open, port)
+	if err := app.RunListener(listener); err != nil {
 		log.Fatal(err)
 	}
 {{ else if eq .Framework "echo" }}
 	app := echo.New()
 	routes.RegisterEchoRoutes(app)
-	renderStartupBlock("{{ .Framework }}", serverPort, time.Since(bootStart))
-	if err := app.Start(addr); err != nil {
+
+	renderStartupBlock("{{ .Framework }}", port, time.Since(bootStart))
+	openBrowserIfRequested(opts.Open, port)
+	srv := &http.Server{
+		Handler:           app,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+	if err := srv.Serve(listener); err != nil {
 		log.Fatal(err)
 	}
 {{ else if eq .Framework "fiber" }}
 	app := fiber.New()
 	routes.RegisterFiberRoutes(app)
-	renderStartupBlock("{{ .Framework }}", serverPort, time.Since(bootStart))
-	if err := app.Listen(addr); err != nil {
+
+	renderStartupBlock("{{ .Framework }}", port, time.Since(bootStart))
+	openBrowserIfRequested(opts.Open, port)
+	if err := app.Listener(listener); err != nil {
 		log.Fatal(err)
 	}
 {{ else if eq .Framework "nethttp" }}
@@ -177,13 +241,13 @@ func main() {
 	mux.HandleFunc("/lalibela2.webp", imageHandler(imagePath))
 
 	renderStartupBlock(pageData.Framework, port, time.Since(bootStart))
+	openBrowserIfRequested(opts.Open, port)
 
 	srv := &http.Server{
-		Addr:              addr,
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-	if err := srv.ListenAndServe(); err != nil {
+	if err := srv.Serve(listener); err != nil {
 		log.Fatal(err)
 	}
 {{ end }}

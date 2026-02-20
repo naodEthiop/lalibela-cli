@@ -83,3 +83,34 @@ func TestParseArgsConfigFallback(t *testing.T) {
 		t.Fatalf("expected FastMode=true from config")
 	}
 }
+
+func TestParseArgsHelpCommand(t *testing.T) {
+	t.Parallel()
+
+	opts, err := ParseArgs([]string{"help"})
+	if err != nil {
+		t.Fatalf("ParseArgs returned error: %v", err)
+	}
+	if !opts.ShowHelp {
+		t.Fatalf("expected ShowHelp=true")
+	}
+}
+
+func TestParseArgsHelpFlags(t *testing.T) {
+	t.Parallel()
+
+	cases := [][]string{
+		{"-h"},
+		{"--h"},
+		{"--help"},
+	}
+	for _, args := range cases {
+		opts, err := ParseArgs(args)
+		if err != nil {
+			t.Fatalf("ParseArgs returned error for %v: %v", args, err)
+		}
+		if !opts.ShowHelp {
+			t.Fatalf("expected ShowHelp=true for %v", args)
+		}
+	}
+}

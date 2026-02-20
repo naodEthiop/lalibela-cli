@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	Version   = "0.1.4"
+	Version   = "0.1.7"
 	GitCommit = "dev"
 	BuildDate = "unknown"
 )
@@ -30,6 +30,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	if opts.ShowHelp {
+		printHelp()
+		return
+	}
 	if opts.ShowVersion {
 		printVersion()
 		return
@@ -125,6 +129,30 @@ func printVersion() {
 	fmt.Printf("lalibela %s\n", Version)
 	fmt.Printf("build date: %s\n", BuildDate)
 	fmt.Printf("commit: %s\n", GitCommit)
+}
+
+func printHelp() {
+	fmt.Println("Lalibela CLI")
+	fmt.Println()
+	fmt.Println("Usage:")
+	fmt.Println("  lalibela [flags]")
+	fmt.Println("  lalibela help")
+	fmt.Println()
+	fmt.Println("Flags:")
+	fmt.Println("  -h, --h, --help          Show help and exit")
+	fmt.Println("  -fast                    Fast mode: skip prompts and use defaults")
+	fmt.Println("  -name string             Project name")
+	fmt.Println("  -framework string        Framework: gin|echo|fiber|nethttp")
+	fmt.Println("  -features string         Comma-separated features (Clean,Logger,PostgreSQL,JWT,Docker)")
+	fmt.Println("  -version                 Print version/build metadata and exit")
+	fmt.Println("  -template-list           List all templates and feature support")
+	fmt.Println("  -config string           Optional config file path (defaults to ~/.lalibela.json)")
+	fmt.Println()
+	fmt.Println("Examples:")
+	fmt.Println("  lalibela")
+	fmt.Println("  lalibela -fast")
+	fmt.Println("  lalibela -name myapi -framework gin -features \"Clean,Logger,JWT\"")
+	fmt.Println("  lalibela -version")
 }
 
 func printCompletionBox(projectName string) {

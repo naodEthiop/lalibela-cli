@@ -52,6 +52,15 @@ go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
 lalibela
 ```
 
+### Help
+
+```bash
+lalibela help
+lalibela -h
+lalibela --h
+lalibela --help
+```
+
 ### Fast mode
 
 ```bash
@@ -79,6 +88,12 @@ cd myapi
 go run .
 ```
 
+Open browser automatically after startup:
+
+```bash
+go run . --open
+```
+
 Expected runtime-style startup output:
 
 ```text
@@ -100,26 +115,15 @@ Note: this block is printed by the generated app, not by the `lalibela` scaffold
 
 ### Generated default welcome page
 
-Generated projects include a default `"/"` route that renders a modern dark welcome page with:
+Generated projects include a default `"/"` route that renders `templates/index.html` as the welcome page across all frameworks.
+
+The HTML template supports:
 
 - `⛪ Lalibela` branding
 - Dynamic project name (`{{ .ProjectName }}`)
 - Dynamic framework label (`{{ .Framework }}`)
 - Subtitle: `Backend scaffolding made modern.`
-- Optional author attribution section
-
-The author section lives in `internal/routes/welcome.go` in generated projects and is intentionally isolated in:
-
-- `<div class="author">...</div>`
-
-It is preceded by this comment to show it is safe to remove:
-
-```html
-<!--
-  This section is optional.
-  You can safely remove it if you do not want to show author attribution.
--->
-```
+- Optional author attribution section (inside your `templates/index.html`)
 
 ### Version output
 
@@ -186,6 +190,8 @@ cmd/lalibela/main.go
 internal/cli/options.go
 internal/generator/generate.go
 internal/utils/exec.go
+index.html
+lalibela2.webp
 templates/main.go.tmpl
 templates/startup.go.tmpl
 templates/env.tmpl
@@ -194,7 +200,6 @@ templates/database.go.tmpl
 templates/jwt.go.tmpl
 templates/Dockerfile.tmpl
 templates/routes/*.tmpl
-templates/routes/welcome.go.tmpl
 templates/clean/**.tmpl
 .goreleaser.yml
 .github/workflows/release.yml
@@ -220,7 +225,7 @@ go run ./cmd/lalibela
 ### Local PowerShell build matrix
 
 ```powershell
-./scripts/build-cross.ps1 -Version v0.1.4
+./scripts/build-cross.ps1 -Version v0.1.7
 ```
 
 Artifacts are generated in `./dist`.
@@ -236,8 +241,8 @@ goreleaser release --clean
 Use `vX.Y.Z` tags:
 
 ```bash
-git tag v0.1.4
-git push origin v0.1.4
+git tag v0.1.7
+git push origin v0.1.7
 ```
 
 Tag push triggers `.github/workflows/release.yml`, which runs GoReleaser and publishes release binaries.
@@ -247,7 +252,7 @@ Tag push triggers `.github/workflows/release.yml`, which runs GoReleaser and pub
 Use ldflags to stamp binaries:
 
 ```bash
-go build -ldflags "-X main.Version=v0.1.4 -X main.GitCommit=$(git rev-parse --short HEAD) -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o lalibela ./cmd/lalibela
+go build -ldflags "-X main.Version=v0.1.7 -X main.GitCommit=$(git rev-parse --short HEAD) -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o lalibela ./cmd/lalibela
 ```
 
 ## Contribution Guidelines
