@@ -195,6 +195,7 @@ func FeatureSetFromNames(features []string) FeatureSet {
 func TemplateCatalog() []TemplateInfo {
 	return []TemplateInfo{
 		{TemplatePath: "templates/env.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
+		{TemplatePath: "templates/index.html.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
 		{TemplatePath: "templates/startup.go.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
 		{TemplatePath: "templates/main.go.tmpl", Frameworks: Frameworks(), Features: []string{"base"}},
 		{TemplatePath: "templates/routes/welcome.go.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
@@ -386,6 +387,7 @@ func generateBaseTemplates(ctx *generationContext) error {
 		outputPath   string
 	}{
 		{templatePath: "templates/env.tmpl", outputPath: ".env"},
+		{templatePath: "templates/index.html.tmpl", outputPath: filepath.Join("templates", "index.html")},
 		{templatePath: "templates/startup.go.tmpl", outputPath: "startup.go"},
 		{templatePath: "templates/routes/welcome.go.tmpl", outputPath: filepath.Join("internal", "routes", "welcome.go")},
 	}
