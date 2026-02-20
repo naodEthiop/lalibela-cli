@@ -18,8 +18,10 @@
 ### Install latest with Go
 
 ```bash
-go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
+go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@main
 ```
+
+After the next tagged release (`v0.1.1+`), `@latest` will work again.
 
 ### Download prebuilt binaries
 
@@ -190,5 +192,4 @@ go build -ldflags "-X main.Version=v0.1.0 -X main.GitCommit=$(git rev-parse --sh
 
 ## License
 
-MIT
-
+MIT 
