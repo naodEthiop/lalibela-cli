@@ -18,10 +18,8 @@
 ### Install latest with Go
 
 ```bash
-go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@main
+go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
 ```
-
-After the next tagged release (`v0.1.1+`), `@latest` will work again.
 
 ### Download prebuilt binaries
 
@@ -152,7 +150,7 @@ go run ./cmd/lalibela
 ### Local PowerShell build matrix
 
 ```powershell
-./scripts/build-cross.ps1 -Version v0.1.0
+./scripts/build-cross.ps1 -Version v0.1.1
 ```
 
 Artifacts are generated in `./dist`.
@@ -168,8 +166,8 @@ goreleaser release --clean
 Use `vX.Y.Z` tags:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 Tag push triggers `.github/workflows/release.yml`, which runs GoReleaser and publishes release binaries.
@@ -179,7 +177,7 @@ Tag push triggers `.github/workflows/release.yml`, which runs GoReleaser and pub
 Use ldflags to stamp binaries:
 
 ```bash
-go build -ldflags "-X main.Version=v0.1.0 -X main.GitCommit=$(git rev-parse --short HEAD) -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o lalibela ./cmd/lalibela
+go build -ldflags "-X main.Version=v0.1.1 -X main.GitCommit=$(git rev-parse --short HEAD) -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o lalibela ./cmd/lalibela
 ```
 
 ## Contribution Guidelines
