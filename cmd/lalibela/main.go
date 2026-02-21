@@ -581,17 +581,20 @@ func printUninstallHelp() {
 
 func printCompletionBox(projectName string, selectedFeatures []string) {
 	fmt.Println(ui.Separator())
-	fmt.Println(ui.Green("✓ Project scaffolded!"))
+	fmt.Println(ui.Green("Project scaffolded successfully."))
 	fmt.Println(ui.Separator())
 	fmt.Println()
 	fmt.Println("Next:")
 	fmt.Printf("  cd %s\n", projectName)
 	fmt.Println("  go run .")
-	fmt.Println()
-	fmt.Println("Server:")
-	fmt.Println("  http://localhost:8080")
-	for _, suggestion := range featureSuggestions(selectedFeatures) {
-		fmt.Printf("  %s\n", suggestion)
+
+	suggestions := featureSuggestions(selectedFeatures)
+	if len(suggestions) > 0 {
+		fmt.Println()
+		fmt.Println("Optional setup tips:")
+		for _, suggestion := range suggestions {
+			fmt.Printf("  - %s\n", suggestion)
+		}
 	}
 	fmt.Println()
 }
@@ -705,19 +708,19 @@ func printCompletedSteps(steps []string) {
 func featureSuggestions(selectedFeatures []string) []string {
 	suggestions := make([]string, 0, 5)
 	if hasFeature(selectedFeatures, generator.FeatureJWT) {
-		suggestions = append(suggestions, "JWT selected: wire middleware from internal/middleware/jwt.go on protected routes.")
+		suggestions = append(suggestions, "JWT: add auth middleware to protected routes in internal/middleware/jwt.go.")
 	}
 	if hasFeature(selectedFeatures, generator.FeaturePostgreSQL) {
-		suggestions = append(suggestions, "PostgreSQL selected: set DB env vars and verify config/database.go.")
+		suggestions = append(suggestions, "PostgreSQL: set DB env vars and review config/database.go.")
 	}
 	if hasFeature(selectedFeatures, generator.FeatureDocker) {
-		suggestions = append(suggestions, "Docker selected: build with 'docker build -t <app> .' and run with '-p 8080:8080'.")
+		suggestions = append(suggestions, "Docker: build with 'docker build -t <app> .' and run with 'docker run -p 8080:8080 <app>'.")
 	}
 	if hasFeature(selectedFeatures, generator.FeatureClean) {
-		suggestions = append(suggestions, "Clean Architecture selected: start wiring use cases from internal/app/bootstrap.go.")
+		suggestions = append(suggestions, "Clean Architecture: start wiring use cases in internal/app/bootstrap.go.")
 	}
 	if hasFeature(selectedFeatures, generator.FeatureLogger) {
-		suggestions = append(suggestions, "Logger selected: initialize logger in config/logger.go during startup.")
+		suggestions = append(suggestions, "Logger: initialize logger in config/logger.go during startup.")
 	}
 	return suggestions
 }
