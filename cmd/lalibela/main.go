@@ -3,18 +3,23 @@ package main
 import (
 	"bufio"
 	"errors"
+	"flag"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/naodEthiop/lalibela-cli/internal/cli"
+	"github.com/naodEthiop/lalibela-cli/internal/features"
 	"github.com/naodEthiop/lalibela-cli/internal/generator"
 	"github.com/naodEthiop/lalibela-cli/internal/ui"
+	"github.com/naodEthiop/lalibela-cli/internal/utils"
 	"golang.org/x/term"
 )
 
 var (
-	Version   = "0.1.8"
+	Version   = "0.1.9"
 	GitCommit = "dev"
 	BuildDate = "unknown"
 )
@@ -22,6 +27,10 @@ var (
 var errGenerationCancelled = errors.New("generation cancelled")
 
 func main() {
+	if handleSubcommand(os.Args[1:]) {
+		return
+	}
+
 	ui.InitTerminal()
 
 	opts, err := cli.ParseArgs(os.Args[1:])
@@ -116,6 +125,82 @@ func main() {
 	printCompletionBox(projectName)
 }
 
+func handleSubcommand(args []string) bool {
+	if len(args) == 0 {
+		return false
+	}
+
+	switch strings.ToLower(strings.TrimSpace(args[0])) {
+	case "add":
+		runAddCommand(args[1:])
+		return true
+	case "run":
+		runRunCommand(args[1:])
+		return true
+	default:
+		return false
+	}
+}
+
+func runAddCommand(args []string) {
+	if len(args) != 1 {
+		fmt.Println("Usage: lalibela add <feature>")
+		fmt.Printf("Supported features: %s\n", strings.Join(features.KnownFeatures(), ", "))
+		os.Exit(1)
+	}
+
+	projectRoot, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	framework, err := features.DetectFramework(projectRoot)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	result, err := features.InstallFeature(projectRoot, framework, args[0], utils.RunCommand)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
+	if !result.Compatible {
+		fmt.Printf("⚠ Feature '%s' not supported for %s\n", result.Name, framework)
+		return
+	}
+	if result.AlreadyPresent {
+		fmt.Printf("Feature '%s' is already installed.\n", result.Name)
+		return
+	}
+	fmt.Printf("Feature '%s' installed successfully.\n", result.Name)
+}
+
+func runRunCommand(args []string) {
+	fs := flag.NewFlagSet("run", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	open := fs.Bool("open", false, "Open browser after server starts")
+	if err := fs.Parse(args); err != nil {
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	cmdArgs := []string{"run", "."}
+	if *open {
+		cmdArgs = append(cmdArgs, "--open")
+	}
+
+	cmd := exec.Command("go", cmdArgs...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
 func printTemplateList() {
 	catalog := generator.TemplateCatalog()
 	fmt.Println(ui.SectionHeader("Template Catalog"))
@@ -137,6 +222,8 @@ func printHelp() {
 	fmt.Println("Usage:")
 	fmt.Println("  lalibela [flags]")
 	fmt.Println("  lalibela help")
+	fmt.Println("  lalibela add <feature>")
+	fmt.Println("  lalibela run [--open]")
 	fmt.Println()
 	fmt.Println("Flags:")
 	fmt.Println("  -h, --h, --help          Show help and exit")
@@ -148,20 +235,30 @@ func printHelp() {
 	fmt.Println("  -template-list           List all templates and feature support")
 	fmt.Println("  -config string           Optional config file path (defaults to ~/.lalibela.json)")
 	fmt.Println()
+	fmt.Println("Production features:")
+	fmt.Printf("  %s\n", strings.Join(features.KnownFeatures(), ", "))
+	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  lalibela")
 	fmt.Println("  lalibela -fast")
 	fmt.Println("  lalibela -name myapi -framework gin -features \"Clean,Logger,JWT\"")
+	fmt.Println("  lalibela add postgres")
+	fmt.Println("  lalibela run --open")
 	fmt.Println("  lalibela -version")
 }
 
 func printCompletionBox(projectName string) {
-	fmt.Println(ui.Separator())
-	fmt.Println(ui.Green(fmt.Sprintf("Project '%s' generated successfully.", projectName)))
-	fmt.Println(ui.SectionHeader("Next steps"))
-	fmt.Printf("  cd %s\n", projectName)
-	fmt.Println("  go run .")
-	fmt.Println(ui.Separator())
+	fmt.Println("----------------------------------------")
+	fmt.Println(ui.Green("Project successfully carved."))
+	fmt.Println("----------------------------------------")
+	fmt.Println()
+	fmt.Println("Next steps:")
+	fmt.Printf("    cd %s\n", projectName)
+	fmt.Println("    go run .")
+	fmt.Println()
+	fmt.Println("Server will start at:")
+	fmt.Println("    http://localhost:8080")
+	fmt.Println()
 }
 
 func printFastModeSummary(projectName, framework string, features []string) {

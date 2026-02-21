@@ -1,19 +1,61 @@
 package routes
 
 import (
+	"encoding/json"
 	"net/http"
 )
 
-func RegisterNetHTTPRoutes() *http.ServeMux {
+func RegisterNetHTTPRoutes(welcomeHTML []byte, imagePath string) *http.ServeMux {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			return
+		}
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write(welcomeHTML)
+	})
+
+	mux.HandleFunc("/lalibela2.webp", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			return
+		}
+		http.ServeFile(w, r, imagePath)
+	})
+
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"status":"ok"}`))
+		if r.Method != http.MethodGet {
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"status": "ok",
+		})
 	})
 
 	mux.HandleFunc("/user/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			return
+		}
 		id := r.URL.Path[len("/user/"):]
-		w.Write([]byte(`{"user_id":"` + id + `","name":"John Doe"}`))
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"user_id": id,
+			"name":    "John Doe",
+		})
 	})
 
 	return mux

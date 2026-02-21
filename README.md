@@ -8,7 +8,9 @@
 - `flag`-based CLI 
 - Interactive and fast modes
 - Framework scaffolds: `gin`, `echo`, `fiber`, `net/http`
-- Optional features: `Clean`, `Logger`, `PostgreSQL`, `JWT`, `Docker`
+- Legacy scaffold options: `Clean`, `Logger`, `PostgreSQL`, `JWT`, `Docker`
+- Modular production feature system via `lalibela add <feature>`
+- Default production bootstrap features auto-installed on new projects
 - Vite-style startup block in generated apps
 - Default branded `"/"` welcome page in generated apps
 - Optional removable author attribution block in generated welcome page
@@ -77,6 +79,32 @@ Fast defaults:
 
 ```bash
 lalibela -name myapi -framework gin -features "Clean,Logger,JWT"
+```
+
+### Feature commands
+
+Install production modules into an existing generated project:
+
+```bash
+lalibela add config
+lalibela add logger
+lalibela add graceful-shutdown
+lalibela add health
+lalibela add error-handler
+lalibela add cors
+lalibela add swagger
+lalibela add docker
+lalibela add auth
+lalibela add rate-limit
+lalibela add postgres
+lalibela add redis
+```
+
+Run a generated project with optional browser auto-open:
+
+```bash
+lalibela run
+lalibela run --open
 ```
 
 ### Generated app startup screen
@@ -175,19 +203,40 @@ lalibela -config ./lalibela.json
 - `fiber`
 - `nethttp` (`net/http` scaffold)
 
-### Features
+### Production Features (`lalibela add <feature>`)
 
-- `Clean` (Clean Architecture layer)
-- `Logger` (zap logger template)
-- `PostgreSQL` (`database/sql` + `lib/pq` template)
-- `JWT` middleware stub
-- `Docker` Dockerfile template
+Core defaults on project creation:
+
+- `config`
+- `logger`
+- `graceful-shutdown`
+- `health`
+- `error-handler`
+- `cors`
+
+Optional:
+
+- `swagger`
+- `docker`
+- `auth`
+- `rate-limit`
+- `postgres`
+- `redis`
+
+Compatibility:
+
+- `gin`: all supported
+- `echo`: all supported
+- `fiber`: all except `swagger` auto-wiring
+- `nethttp`: `docker`, `logger`, `postgres`, `redis`, `config`, `graceful-shutdown`, `health`, `swagger` (manual wiring)
 
 ## Project Layout
 
 ```text
 cmd/lalibela/main.go
 internal/cli/options.go
+internal/features/
+internal/features/*/feature.go
 internal/generator/generate.go
 internal/utils/exec.go
 index.html
@@ -225,7 +274,7 @@ go run ./cmd/lalibela
 ### Local PowerShell build matrix
 
 ```powershell
-./scripts/build-cross.ps1 -Version v0.1.8
+./scripts/build-cross.ps1 -Version v0.1.9
 ```
 
 Artifacts are generated in `./dist`.
@@ -241,8 +290,8 @@ goreleaser release --clean
 Use `vX.Y.Z` tags:
 
 ```bash
-git tag v0.1.8
-git push origin v0.1.8
+git tag v0.1.9
+git push origin v0.1.9
 ```
 
 Tag push triggers `.github/workflows/release.yml`, which runs GoReleaser and publishes release binaries.
@@ -252,7 +301,7 @@ Tag push triggers `.github/workflows/release.yml`, which runs GoReleaser and pub
 Use ldflags to stamp binaries:
 
 ```bash
-go build -ldflags "-X main.Version=v0.1.8 -X main.GitCommit=$(git rev-parse --short HEAD) -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o lalibela ./cmd/lalibela
+go build -ldflags "-X main.Version=v0.1.9 -X main.GitCommit=$(git rev-parse --short HEAD) -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o lalibela ./cmd/lalibela
 ```
 
 ## Contribution Guidelines

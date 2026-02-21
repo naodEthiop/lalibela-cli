@@ -11,6 +11,7 @@ import (
 	"text/template"
 
 	lalibelacli "github.com/naodEthiop/lalibela-cli"
+	"github.com/naodEthiop/lalibela-cli/internal/features"
 	"github.com/naodEthiop/lalibela-cli/internal/utils"
 )
 
@@ -355,6 +356,7 @@ func buildSteps(features FeatureSet, framework string) []generationStep {
 	}
 
 	steps = append(steps, generationStep{name: "setting up go modules", fn: setupDependencies})
+	steps = append(steps, generationStep{name: "installing default production features", fn: installDefaultProductionFeatures})
 	return steps
 }
 
@@ -387,7 +389,6 @@ func generateBaseTemplates(ctx *generationContext) error {
 		outputPath   string
 	}{
 		{templatePath: "templates/env.tmpl", outputPath: ".env"},
-		{templatePath: "index.html", outputPath: filepath.Join("templates", "index.html")},
 		{templatePath: "templates/startup.go.tmpl", outputPath: "startup.go"},
 	}
 
@@ -395,6 +396,10 @@ func generateBaseTemplates(ctx *generationContext) error {
 		if err := renderProjectTemplate(ctx, item.templatePath, item.outputPath); err != nil {
 			return err
 		}
+	}
+
+	if err := copyProjectAsset(ctx, "index.html", filepath.Join("templates", "index.html")); err != nil {
+		return err
 	}
 
 	if err := copyProjectAsset(ctx, "lalibela2.webp", filepath.Join("templates", "lalibela2.webp")); err != nil {
@@ -473,6 +478,13 @@ func setupDependencies(ctx *generationContext) error {
 	}
 	if err := ctx.runner(ctx.projectPath, "go", "mod", "tidy"); err != nil {
 		return fmt.Errorf("go mod tidy failed: %w", err)
+	}
+	return nil
+}
+
+func installDefaultProductionFeatures(ctx *generationContext) error {
+	if _, err := features.InstallDefaults(ctx.projectPath, ctx.data.Framework, ctx.runner); err != nil {
+		return err
 	}
 	return nil
 }

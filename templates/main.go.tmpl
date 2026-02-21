@@ -1,12 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strconv"
+	"strings"
 	"time"
 
 	"{{ .ModuleName }}/internal/routes"
@@ -18,19 +24,23 @@ import (
 {{ else if eq .Framework "fiber" }}
 	"github.com/gofiber/fiber/v2"
 {{ else if eq .Framework "nethttp" }}
-	"html/template"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 {{ end }}
 )
 
 const serverPort = 8080
+const (
+	defaultProjectName = "{{ .ProjectName }}"
+	defaultFramework   = "{{ .Framework }}"
+)
 
 type runtimeOptions struct {
 	Open bool
+}
+
+type PageData struct {
+	ProjectName string
+	Framework   string
 }
 
 func parseRuntimeOptions() runtimeOptions {
@@ -72,19 +82,6 @@ func openBrowserIfRequested(open bool, port int) {
 	}()
 }
 
-{{ if eq .Framework "nethttp" }}
-const (
-	defaultProjectName = "{{ .ProjectName }}"
-	defaultFramework   = "{{ .Framework }}"
-)
-
-type PageData struct {
-	ProjectName string
-	Framework   string
-}
-
-var indexTemplate *template.Template
-
 func resolveTemplatePath() string {
 	raw := strings.TrimSpace(os.Getenv("INDEX_TEMPLATE_PATH"))
 	if raw == "" {
@@ -101,51 +98,17 @@ func resolveImagePath() string {
 	return raw
 }
 
-func loadTemplates(templatePath string) error {
+func renderHomePage(templatePath string, data PageData) ([]byte, error) {
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
-		return fmt.Errorf("parse %s: %w", templatePath, err)
+		return nil, fmt.Errorf("parse %s: %w", templatePath, err)
 	}
-	indexTemplate = tmpl
-	return nil
-}
 
-func homeHandler(data PageData) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-			return
-		}
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-		if indexTemplate == nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		if err := indexTemplate.Execute(w, data); err != nil {
-			log.Printf("rendering index template: %v", err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return nil, fmt.Errorf("execute %s: %w", templatePath, err)
 	}
-}
-
-func imageHandler(imagePath string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-			return
-		}
-		if r.URL.Path != "/lalibela2.webp" {
-			http.NotFound(w, r)
-			return
-		}
-		http.ServeFile(w, r, imagePath)
-	}
+	return buf.Bytes(), nil
 }
 
 func resolvePort() int {
@@ -178,23 +141,19 @@ func resolvePageData() PageData {
 		Framework:   framework,
 	}
 }
-{{ end }}
 
 func main() {
 	opts := parseRuntimeOptions()
 	bootStart := time.Now()
-{{ if eq .Framework "nethttp" }}
 	templatePath := resolveTemplatePath()
 	imagePath := resolveImagePath()
-	if err := loadTemplates(templatePath); err != nil {
+	pageData := resolvePageData()
+	welcomeHTML, err := renderHomePage(templatePath, pageData)
+	if err != nil {
 		log.Fatalf("template initialization failed: %v", err)
 	}
 
-	pageData := resolvePageData()
 	port := resolvePort()
-{{ else }}
-	port := serverPort
-{{ end }}
 
 	addr := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", addr)
@@ -206,7 +165,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	app := gin.New()
 	app.Use(gin.Recovery())
-	routes.RegisterGinRoutes(app)
+	routes.RegisterGinRoutes(app, welcomeHTML, imagePath)
 
 	renderStartupBlock("{{ .Framework }}", port, time.Since(bootStart))
 	openBrowserIfRequested(opts.Open, port)
@@ -215,7 +174,7 @@ func main() {
 	}
 {{ else if eq .Framework "echo" }}
 	app := echo.New()
-	routes.RegisterEchoRoutes(app)
+	routes.RegisterEchoRoutes(app, welcomeHTML, imagePath)
 
 	renderStartupBlock("{{ .Framework }}", port, time.Since(bootStart))
 	openBrowserIfRequested(opts.Open, port)
@@ -228,7 +187,7 @@ func main() {
 	}
 {{ else if eq .Framework "fiber" }}
 	app := fiber.New()
-	routes.RegisterFiberRoutes(app)
+	routes.RegisterFiberRoutes(app, welcomeHTML, imagePath)
 
 	renderStartupBlock("{{ .Framework }}", port, time.Since(bootStart))
 	openBrowserIfRequested(opts.Open, port)
@@ -236,9 +195,7 @@ func main() {
 		log.Fatal(err)
 	}
 {{ else if eq .Framework "nethttp" }}
-	mux := routes.RegisterNetHTTPRoutes()
-	mux.HandleFunc("/", homeHandler(pageData))
-	mux.HandleFunc("/lalibela2.webp", imageHandler(imagePath))
+	mux := routes.RegisterNetHTTPRoutes(welcomeHTML, imagePath)
 
 	renderStartupBlock(pageData.Framework, port, time.Since(bootStart))
 	openBrowserIfRequested(opts.Open, port)

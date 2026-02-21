@@ -2,12 +2,12 @@ package routes
 
 import "github.com/labstack/echo/v4"
 
-func RegisterEchoRoutes(e *echo.Echo) {
+func RegisterEchoRoutes(e *echo.Echo, welcomeHTML []byte, imagePath string) {
 	e.GET("/", func(c echo.Context) error {
-		return c.File("templates/index.html")
+		return c.HTMLBlob(200, welcomeHTML)
 	})
 	e.GET("/lalibela2.webp", func(c echo.Context) error {
-		return c.File("templates/lalibela2.webp")
+		return c.File(imagePath)
 	})
 
 	e.GET("/health", func(c echo.Context) error {

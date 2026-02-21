@@ -1,12 +1,18 @@
 package routes
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
 
-func RegisterGinRoutes(r *gin.Engine) {
+	"github.com/gin-gonic/gin"
+)
+
+func RegisterGinRoutes(r *gin.Engine, welcomeHTML []byte, imagePath string) {
 	r.GET("/", func(c *gin.Context) {
-		c.File("templates/index.html")
+		c.Data(http.StatusOK, "text/html; charset=utf-8", welcomeHTML)
 	})
-	r.StaticFile("/lalibela2.webp", "templates/lalibela2.webp")
+	r.GET("/lalibela2.webp", func(c *gin.Context) {
+		c.File(imagePath)
+	})
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{

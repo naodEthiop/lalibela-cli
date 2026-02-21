@@ -2,12 +2,13 @@ package routes
 
 import "github.com/gofiber/fiber/v2"
 
-func RegisterFiberRoutes(app *fiber.App) {
+func RegisterFiberRoutes(app *fiber.App, welcomeHTML []byte, imagePath string) {
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendFile("templates/index.html")
+		c.Type("html", "utf-8")
+		return c.Status(fiber.StatusOK).Send(welcomeHTML)
 	})
 	app.Get("/lalibela2.webp", func(c *fiber.Ctx) error {
-		return c.SendFile("templates/lalibela2.webp")
+		return c.SendFile(imagePath)
 	})
 
 	app.Get("/health", func(c *fiber.Ctx) error {
