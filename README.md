@@ -1,21 +1,21 @@
-# Lalibela CLI
+ï»¿# Lalibela CLI
 
 Production-grade backend scaffolding for Go teams.  
 **Lalibela** gives you a fast, modern developer experience (inspired by Vite), but built as a lightweight Go CLI with zero runtime dependencies.
 
 ---
 
-## Why this tool?
+## Why Lalibela?
 
-Frontend tooling set the bar for great DX: instant setup, clear output, and sensible defaults. Backend tooling often still feels slow and fragmented.
+Lalibela was built to improve developer productivity by reducing repetitive setup work and helping teams ship faster with confidence.
 
-Lalibela closes that gap for Go backend development:
+It automates common backend workflows, simplifies complex project bootstrapping, and enforces secure defaults from the start so new services begin with a strong baseline.
 
-- Fast project generation from templates
-- Clean CLI UX with actionable output
-- Modern startup workflow (`go run .`)
-- Template-driven and framework-aware
-- Single binary, no runtime dependency chain
+### The Name and Its Symbolism
+
+The name "Lalibela" is inspired by architectural precision and craftsmanship. It reflects the belief that strong software, like great architecture, is shaped with structure, intention, and durability.
+
+This philosophy guides the CLI design: practical foundations, clear structure, and reliable outcomes for real-world engineering.
 
 ---
 
@@ -26,9 +26,11 @@ Lalibela closes that gap for Go backend development:
 - Auto-configures `templates/index.html` welcome page
 - Starts local development server with `lalibela run`
 - Optional browser auto-open (`--open`)
-- Interactive mode and non-interactive mode (`--yes`)
-- Actionable error messages and command help
+- Interactive and non-interactive modes (`--yes`)
+- Actionable errors with command-specific help
+- Colorized help/version output for better terminal UX
 - Built-in feature installation system (`lalibela add <feature>`)
+- Safe self-uninstall command (`lalibela uninstall` with optional `--force`)
 - Embedded templates in the binary
 - Cross-platform support: Windows, macOS, Linux
 
@@ -87,6 +89,7 @@ lalibela help [command]
 ```bash
 lalibela add <feature>
 lalibela run [--open]
+lalibela uninstall [--force]
 ```
 
 ### Common Flags
@@ -111,8 +114,11 @@ lalibela add postgres
 lalibela add redis
 lalibela run
 lalibela run --open
+lalibela uninstall
+lalibela uninstall --force
 lalibela help add
 lalibela help run
+lalibela help uninstall
 ```
 
 ---
@@ -121,29 +127,29 @@ lalibela help run
 
 ```text
 myapi/
-+- .env
-+- go.mod
-+- main.go
-+- startup.go
-+- templates/
-¦  +- index.html
-¦  +- lalibela2.webp
-+- internal/
-¦  +- routes/
-¦  ¦  +- routes.go
-¦  +- middleware/
-¦  ¦  +- jwt.go            (if selected)
-¦  +- config/
-¦  ¦  +- config.go         (default production feature)
-¦  +- logger/
-¦  ¦  +- logger.go         (default production feature)
-¦  +- server/
-¦     +- health.go
-¦     +- cors.go
-¦     +- error_handler.go
-¦     +- graceful_shutdown.go
-+- .lalibela/
-   +- features.json
+|- .env
+|- go.mod
+|- main.go
+|- startup.go
+|- templates/
+|  |- index.html
+|  |- lalibela2.webp
+|- internal/
+|  |- routes/
+|  |  |- routes.go
+|  |- middleware/
+|  |  |- jwt.go            (if selected)
+|  |- config/
+|  |  |- config.go         (default production feature)
+|  |- logger/
+|  |  |- logger.go         (default production feature)
+|  |- server/
+|     |- health.go
+|     |- cors.go
+|     |- error_handler.go
+|     |- graceful_shutdown.go
+|- .lalibela/
+   |- features.json
 ```
 
 ---
