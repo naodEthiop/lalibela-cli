@@ -42,7 +42,10 @@ func (s *Spinner) Start() {
 
 		frame := 0
 		render := func() {
-			fmt.Printf("\r%s %s", s.message, Cyan(spinnerFrames[frame%len(spinnerFrames)]))
+			s.mu.Lock()
+			message := s.message
+			s.mu.Unlock()
+			fmt.Printf("\r%s %s", message, Cyan(spinnerFrames[frame%len(spinnerFrames)]))
 			frame++
 		}
 
@@ -57,6 +60,12 @@ func (s *Spinner) Start() {
 			}
 		}
 	}()
+}
+
+func (s *Spinner) Update(message string) {
+	s.mu.Lock()
+	s.message = message
+	s.mu.Unlock()
 }
 
 func (s *Spinner) StopSuccess(message string) {

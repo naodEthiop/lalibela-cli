@@ -50,6 +50,22 @@ func TestParseArgsVersionAndTemplateList(t *testing.T) {
 	}
 }
 
+func TestParseArgsShortVersion(t *testing.T) {
+	t.Parallel()
+
+	configPath := filepath.Join(t.TempDir(), "missing.json")
+	opts, err := ParseArgs([]string{
+		"-config", configPath,
+		"-v",
+	})
+	if err != nil {
+		t.Fatalf("ParseArgs returned error: %v", err)
+	}
+	if !opts.ShowVersion {
+		t.Fatalf("expected ShowVersion=true for -v")
+	}
+}
+
 func TestParseArgsConfigFallback(t *testing.T) {
 	t.Parallel()
 
@@ -112,5 +128,40 @@ func TestParseArgsHelpFlags(t *testing.T) {
 		if !opts.ShowHelp {
 			t.Fatalf("expected ShowHelp=true for %v", args)
 		}
+	}
+}
+
+func TestParseArgsAssumeYes(t *testing.T) {
+	t.Parallel()
+
+	configPath := filepath.Join(t.TempDir(), "missing.json")
+	opts, err := ParseArgs([]string{
+		"-config", configPath,
+		"--yes",
+	})
+	if err != nil {
+		t.Fatalf("ParseArgs returned error: %v", err)
+	}
+	if !opts.AssumeYes {
+		t.Fatalf("expected AssumeYes=true")
+	}
+	if opts.ProjectName == "" {
+		t.Fatalf("expected default project name in --yes mode")
+	}
+	if opts.Framework == "" {
+		t.Fatalf("expected default framework in --yes mode")
+	}
+}
+
+func TestParseArgsUnknownPositional(t *testing.T) {
+	t.Parallel()
+
+	configPath := filepath.Join(t.TempDir(), "missing.json")
+	_, err := ParseArgs([]string{
+		"-config", configPath,
+		"unknown-command",
+	})
+	if err == nil {
+		t.Fatalf("expected error for unknown positional argument")
 	}
 }

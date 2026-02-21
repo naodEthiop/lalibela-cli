@@ -1,317 +1,199 @@
-# lalibela-cli
-![Project Logo](/logo.png)
+# Lalibela CLI
 
-`lalibela-cli` is the repository for **Lalibela**, a keyboard-first Go CLI (`lalibela`) that scaffolds backend projects.
+Production-grade backend scaffolding for Go teams.  
+**Lalibela** gives you a fast, modern developer experience (inspired by Vite), but built as a lightweight Go CLI with zero runtime dependencies.
 
-## Highlights
+---
 
-- `flag`-based CLI 
-- Interactive and fast modes
-- Framework scaffolds: `gin`, `echo`, `fiber`, `net/http`
-- Legacy scaffold options: `Clean`, `Logger`, `PostgreSQL`, `JWT`, `Docker`
-- Modular production feature system via `lalibela add <feature>`
-- Default production bootstrap features auto-installed on new projects
-- Vite-style startup block in generated apps
-- Default branded `"/"` welcome page in generated apps
-- Optional removable author attribution block in generated welcome page
-- Rollback on generation failure
-- Embedded templates in release/install binaries (no external template folder required)
-- Build metadata support (`Version`, `GitCommit`, `BuildDate`)
-- Template catalog output via `-template-list`
+## Why this tool?
+
+Frontend tooling set the bar for great DX: instant setup, clear output, and sensible defaults. Backend tooling often still feels slow and fragmented.
+
+Lalibela closes that gap for Go backend development:
+
+- Fast project generation from templates
+- Clean CLI UX with actionable output
+- Modern startup workflow (`go run .`)
+- Template-driven and framework-aware
+- Single binary, no runtime dependency chain
+
+---
+
+## Features
+
+- Scaffolds new Go web projects from templates
+- Supports multiple server frameworks (`gin`, `echo`, `fiber`, `net/http`)
+- Auto-configures `templates/index.html` welcome page
+- Starts local development server with `lalibela run`
+- Optional browser auto-open (`--open`)
+- Interactive mode and non-interactive mode (`--yes`)
+- Actionable error messages and command help
+- Built-in feature installation system (`lalibela add <feature>`)
+- Embedded templates in the binary
+- Cross-platform support: Windows, macOS, Linux
+
+---
 
 ## Installation
 
-### Install latest with Go
+### Option 1: Install with Go
 
 ```bash
 go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
 ```
 
-If your machine still installs an older cached build, force direct fetch:
+### Option 2: Download prebuilt binaries
+
+1. Open Releases: `https://github.com/naodEthiop/lalibela-cli/releases`
+2. Download your OS/architecture archive
+3. Extract and add `lalibela` to your `PATH`
+
+---
+
+## Quick Start
 
 ```bash
-GOPROXY=direct go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
-```
-
-PowerShell:
-
-```powershell
-$env:GOPROXY='direct'
-go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
-```
-
-### Download prebuilt binaries
-
-1. Open GitHub Releases: https://github.com/naodEthiop/lalibela-cli/releases
-2. Download the archive for your OS/arch.
-3. Add the extracted binary to your `PATH`.
-
-## Usage
-
-### Interactive mode
-
-```bash
+# 1) Scaffold a new project
 lalibela
+
+# 2) Move into the generated folder
+cd myapp
+
+# 3) Start development server
+go run .
 ```
 
-### Help
+Non-interactive:
 
 ```bash
-lalibela help
-lalibela -h
-lalibela --h
-lalibela --help
-```
-
-### Fast mode
-
-```bash
-lalibela -fast
-```
-
-Fast defaults:
-
-- Project name: `myapp`
-- Framework: `gin`
-- Features: `Logger,PostgreSQL,JWT,Docker`
-
-### Non-interactive feature flags
-
-```bash
-lalibela -name myapi -framework gin -features "Clean,Logger,JWT"
-```
-
-### Feature commands
-
-Install production modules into an existing generated project:
-
-```bash
-lalibela add config
-lalibela add logger
-lalibela add graceful-shutdown
-lalibela add health
-lalibela add error-handler
-lalibela add cors
-lalibela add swagger
-lalibela add docker
-lalibela add auth
-lalibela add rate-limit
-lalibela add postgres
-lalibela add redis
-```
-
-Run a generated project with optional browser auto-open:
-
-```bash
-lalibela run
-lalibela run --open
-```
-
-### Generated app startup screen
-
-After scaffolding, run the generated project:
-
-```bash
+lalibela --yes -name myapi -framework gin
 cd myapi
 go run .
 ```
 
-Open browser automatically after startup:
+---
+
+## CLI Usage
+
+### Root
 
 ```bash
-go run . --open
+lalibela [flags]
+lalibela help [command]
 ```
 
-Expected runtime-style startup output:
+### Commands
+
+```bash
+lalibela add <feature>
+lalibela run [--open]
+```
+
+### Common Flags
+
+- `-h, --help` show help
+- `-v, --version` print version
+- `-y, --yes` auto-accept prompts / non-interactive mode
+- `-fast` scaffold with defaults
+- `-name <project>` set project name
+- `-framework <gin|echo|fiber|nethttp>` select framework
+- `-features "Clean,Logger,PostgreSQL,JWT,Docker"` select legacy scaffold features
+- `-template-list` print template catalog
+- `-config <path>` custom config file path
+
+### Examples
+
+```bash
+lalibela
+lalibela --yes -name billing-api -framework echo
+lalibela -name auth-api -framework gin -features "Logger,JWT,Docker"
+lalibela add postgres
+lalibela add redis
+lalibela run
+lalibela run --open
+lalibela help add
+lalibela help run
+```
+
+---
+
+## Example Generated Project Structure
 
 ```text
-------------------------------------------------------------
- LALIBELA v1.0.0  ready in 12ms
-
- âžœ  Framework:  ðŸ¥ƒ gin
- âžœ  Mode:       development
- âžœ  Local:      http://localhost:8080
- âžœ  Network:    http://192.168.1.5:8080
-
-------------------------------------------------------------
-
-Ready to build something great.
-Press Ctrl+C to stop.
+myapi/
++- .env
++- go.mod
++- main.go
++- startup.go
++- templates/
+¦  +- index.html
+¦  +- lalibela2.webp
++- internal/
+¦  +- routes/
+¦  ¦  +- routes.go
+¦  +- middleware/
+¦  ¦  +- jwt.go            (if selected)
+¦  +- config/
+¦  ¦  +- config.go         (default production feature)
+¦  +- logger/
+¦  ¦  +- logger.go         (default production feature)
+¦  +- server/
+¦     +- health.go
+¦     +- cors.go
+¦     +- error_handler.go
+¦     +- graceful_shutdown.go
++- .lalibela/
+   +- features.json
 ```
 
-Note: this block is printed by the generated app, not by the `lalibela` scaffolder command itself.
+---
 
-### Generated default welcome page
-
-Generated projects include a default `"/"` route that renders `templates/index.html` as the welcome page across all frameworks.
-
-The HTML template supports:
-
-- `â›ª Lalibela` branding
-- Dynamic project name (`{{ .ProjectName }}`)
-- Dynamic framework label (`{{ .Framework }}`)
-- Subtitle: `Backend scaffolding made modern.`
-- Optional author attribution section (inside your `templates/index.html`)
-
-### Version output
-
-```bash
-lalibela -version
-```
-
-Expected format:
-
-```text
-lalibela X.Y.Z
-build date: 2026-02-19T12:00:00Z
-commit: a1b2c3d
-```
-
-### Template listing
-
-```bash
-lalibela -template-list
-```
-
-## Optional HOME Config
-
-Lalibela can read defaults from `~/.lalibela.json` (or `%USERPROFILE%\\.lalibela.json` on Windows).
-
-Example:
+## Configuration (`~/.lalibela.json`)
 
 ```json
 {
   "project_name": "starter-api",
-  "framework": "echo",
+  "framework": "gin",
   "features": ["Logger", "Docker"],
   "fast": false
 }
 ```
 
-Use a custom config path:
+Use a custom config file:
 
 ```bash
 lalibela -config ./lalibela.json
 ```
 
-## Frameworks and Feature Support
+---
 
-### Frameworks
+## Roadmap
 
-- `gin`
-- `echo`
-- `fiber`
-- `nethttp` (`net/http` scaffold)
+- Improved plugin ecosystem for third-party templates
+- Expanded framework-aware feature patching
+- Database migration command workflow
+- Optional CI/CD starter profiles
+- Shell completion support
+- Better project upgrade/diff tooling
 
-### Production Features (`lalibela add <feature>`)
+---
 
-Core defaults on project creation:
+## Contributing
 
-- `config`
-- `logger`
-- `graceful-shutdown`
-- `health`
-- `error-handler`
-- `cors`
+Contributions are welcome.
 
-Optional:
+1. Fork the repository
+2. Create a feature branch
+3. Run tests: `go test ./...`
+4. Open a PR with:
+   - clear summary
+   - rationale
+   - before/after CLI output when relevant
 
-- `swagger`
-- `docker`
-- `auth`
-- `rate-limit`
-- `postgres`
-- `redis`
+Please keep changes backward compatible and UX-focused.
 
-Compatibility:
-
-- `gin`: all supported
-- `echo`: all supported
-- `fiber`: all except `swagger` auto-wiring
-- `nethttp`: `docker`, `logger`, `postgres`, `redis`, `config`, `graceful-shutdown`, `health`, `swagger` (manual wiring)
-
-## Project Layout
-
-```text
-cmd/lalibela/main.go
-internal/cli/options.go
-internal/features/
-internal/features/*/feature.go
-internal/generator/generate.go
-internal/utils/exec.go
-index.html
-lalibela2.webp
-templates/main.go.tmpl
-templates/startup.go.tmpl
-templates/env.tmpl
-templates/logger.go.tmpl
-templates/database.go.tmpl
-templates/jwt.go.tmpl
-templates/Dockerfile.tmpl
-templates/routes/*.tmpl
-templates/clean/**.tmpl
-.goreleaser.yml
-.github/workflows/release.yml
-scripts/build-cross.ps1
-```
-
-## Development
-
-Run tests:
-
-```bash
-go test ./...
-```
-
-Run locally:
-
-```bash
-go run ./cmd/lalibela
-```
-
-## Cross-Platform Builds
-
-### Local PowerShell build matrix
-
-```powershell
-./scripts/build-cross.ps1 -Version v0.1.9
-```
-
-Artifacts are generated in `./dist`.
-
-### GoReleaser
-
-```bash
-goreleaser release --clean
-```
-
-## Semantic Versioning and Tags
-
-Use `vX.Y.Z` tags:
-
-```bash
-git tag v0.1.9
-git push origin v0.1.9
-```
-
-Tag push triggers `.github/workflows/release.yml`, which runs GoReleaser and publishes release binaries.
-
-## Build Metadata via ldflags
-
-Use ldflags to stamp binaries:
-
-```bash
-go build -ldflags "-X main.Version=v0.1.9 -X main.GitCommit=$(git rev-parse --short HEAD) -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o lalibela ./cmd/lalibela
-```
-
-## Contribution Guidelines
-
-1. Fork and create a branch.
-2. Add/adjust templates and generator logic with tests.
-3. Run `go test ./...`.
-4. Open a PR with a clear summary and sample command output.
-5. Keep CLI flag behavior backward compatible where possible.
+---
 
 ## License
 
-MIT 
+MIT License.

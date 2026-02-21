@@ -35,12 +35,11 @@ func main() {
 
 	opts, err := cli.ParseArgs(os.Args[1:])
 	if err != nil {
-		fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
-		os.Exit(1)
+		handleRootParseError(err)
 	}
 
 	if opts.ShowHelp {
-		printHelp()
+		printRootHelp()
 		return
 	}
 	if opts.ShowVersion {
@@ -58,71 +57,106 @@ func main() {
 	framework := opts.Framework
 	selectedFeatures := opts.Features
 
-	if !opts.FastMode && strings.TrimSpace(projectName) == "" {
+	if !opts.FastMode && !opts.AssumeYes && strings.TrimSpace(projectName) == "" {
 		input, err := promptTextInput("Enter project name: ")
 		if err != nil {
-			fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
-			os.Exit(1)
+			exitWithError(
+				"Could not read project name.",
+				fmt.Sprintf("Details: %v", err),
+				"Use -name <project> or pass --yes to run non-interactively.",
+			)
 		}
 		projectName = input
 	}
 
-	if !opts.FastMode && strings.TrimSpace(framework) == "" {
+	if !opts.FastMode && !opts.AssumeYes && strings.TrimSpace(framework) == "" {
 		frameworks := generator.Frameworks()
 		selection, err := promptFrameworkSelection(frameworks)
 		if err != nil {
-			fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
-			os.Exit(1)
+			exitWithError(
+				"Could not read framework selection.",
+				fmt.Sprintf("Details: %v", err),
+				"Use -framework <gin|echo|fiber|nethttp> or pass --yes.",
+			)
 		}
 		framework = selection
 	}
 
-	if !opts.FastMode && !opts.FeaturesProvided {
+	if !opts.FastMode && !opts.AssumeYes && !opts.FeaturesProvided {
 		features := generator.InteractiveFeatures()
 		selection, err := promptFeatureSelection(features)
 		if err != nil {
-			fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
-			os.Exit(1)
+			exitWithError(
+				"Could not read feature selection.",
+				fmt.Sprintf("Details: %v", err),
+				"Use -features \"Clean,Logger,JWT\" or pass --yes.",
+			)
 		}
 		normalizedFeatures, err := generator.NormalizeFeatureNames(selection)
 		if err != nil {
-			fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
-			os.Exit(1)
+			exitWithError(
+				"Feature selection was invalid.",
+				fmt.Sprintf("Details: %v", err),
+				"Run 'lalibela --help' for supported feature values.",
+			)
 		}
 		selectedFeatures = normalizedFeatures
 	}
 
-	if opts.FastMode {
+	if strings.TrimSpace(projectName) == "" {
+		exitWithError(
+			"Project name is required.",
+			"Use -name <project-name>.",
+			"Run 'lalibela --help' for examples.",
+		)
+	}
+	if strings.TrimSpace(framework) == "" {
+		exitWithError(
+			"Framework is required.",
+			"Use -framework <gin|echo|fiber|nethttp>.",
+			"Run 'lalibela --help' for examples.",
+		)
+	}
+
+	if opts.FastMode || opts.AssumeYes {
 		printFastModeSummary(projectName, framework, selectedFeatures)
 	}
 
-	if err := confirmOverwriteIfNeeded(projectName); err != nil {
+	if err := confirmOverwriteIfNeeded(projectName, opts.AssumeYes); err != nil {
 		if errors.Is(err, errGenerationCancelled) {
 			fmt.Println(ui.Yellow("Generation cancelled."))
 			return
 		}
-		fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
-		os.Exit(1)
+		exitWithError(
+			"Unable to prepare target directory.",
+			fmt.Sprintf("Details: %v", err),
+			"Choose a different -name or remove the existing directory.",
+		)
 	}
 
 	fmt.Println(ui.Separator())
 	fmt.Println(ui.SectionHeader("Generation"))
 	fmt.Println(ui.Separator())
 
-	spinner := ui.NewSpinner("Generating project...")
+	stepLogs := make([]string, 0, 16)
+	spinner := ui.NewSpinner("Initializing scaffold...")
 	spinner.Start()
 	if err := generator.GenerateProject(generator.Options{
 		ProjectName: projectName,
 		Framework:   framework,
 		Features:    selectedFeatures,
+		Status: func(step string, current int, total int) {
+			stepLogs = append(stepLogs, step)
+			spinner.Update(fmt.Sprintf("(%d/%d) %s", current, total, formatGenerationStep(step)))
+		},
 	}); err != nil {
-		spinner.StopError("Generation failed")
-		fmt.Println(ui.Red(fmt.Sprintf("Error: %v", err)))
-		os.Exit(1)
+		spinner.StopError("Scaffold failed")
+		printGenerationFailureAndExit(err)
 	}
 
-	spinner.StopSuccess("Project created successfully!")
-	printCompletionBox(projectName)
+	spinner.StopSuccess("Project files generated")
+	printCompletedSteps(stepLogs)
+	printCompletionBox(projectName, selectedFeatures)
 }
 
 func handleSubcommand(args []string) bool {
@@ -134,56 +168,128 @@ func handleSubcommand(args []string) bool {
 	case "add":
 		runAddCommand(args[1:])
 		return true
+	case "help":
+		runHelpCommand(args[1:])
+		return true
 	case "run":
 		runRunCommand(args[1:])
 		return true
+	case "-h", "--help":
+		printRootHelp()
+		return true
+	case "-v", "--version":
+		printVersion()
+		return true
 	default:
+		if strings.HasPrefix(strings.TrimSpace(args[0]), "-") {
+			return false
+		}
+		exitWithError(
+			fmt.Sprintf("Unknown command %q.", args[0]),
+			"Run 'lalibela help' to see available commands.",
+		)
 		return false
 	}
 }
 
 func runAddCommand(args []string) {
-	if len(args) != 1 {
-		fmt.Println("Usage: lalibela add <feature>")
-		fmt.Printf("Supported features: %s\n", strings.Join(features.KnownFeatures(), ", "))
-		os.Exit(1)
+	fs := flag.NewFlagSet("add", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	showHelp := fs.Bool("help", false, "Show add command help")
+	showHelpShort := fs.Bool("h", false, "Show add command help")
+	if err := fs.Parse(args); err != nil {
+		exitWithError(
+			"Invalid arguments for 'add' command.",
+			fmt.Sprintf("Details: %v", err),
+			"Run 'lalibela help add' for usage.",
+		)
 	}
+	if *showHelp || *showHelpShort {
+		printAddHelp()
+		return
+	}
+	if fs.NArg() != 1 {
+		exitWithError(
+			"Feature name is required.",
+			"Usage: lalibela add <feature>",
+			fmt.Sprintf("Supported features: %s", strings.Join(features.KnownFeatures(), ", ")),
+		)
+	}
+	featureName := fs.Arg(0)
 
 	projectRoot, err := os.Getwd()
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		os.Exit(1)
+		exitWithError(
+			"Could not determine current directory.",
+			fmt.Sprintf("Details: %v", err),
+		)
 	}
 
 	framework, err := features.DetectFramework(projectRoot)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		os.Exit(1)
+		exitWithError(
+			"Could not detect project framework.",
+			fmt.Sprintf("Details: %v", err),
+			"Run this command from a generated Lalibela project root.",
+		)
 	}
 
-	result, err := features.InstallFeature(projectRoot, framework, args[0], utils.RunCommand)
+	spinner := ui.NewSpinner("Installing feature...")
+	spinner.Start()
+	result, err := features.InstallFeature(projectRoot, framework, featureName, utils.RunCommand)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		os.Exit(1)
+		spinner.StopError("Feature install failed")
+		exitWithError(
+			fmt.Sprintf("Failed to install feature %q.", featureName),
+			fmt.Sprintf("Details: %v", err),
+			"Run 'lalibela help add' for supported feature names.",
+		)
 	}
 	if !result.Compatible {
+		spinner.StopError("Feature not compatible")
 		fmt.Printf("⚠ Feature '%s' not supported for %s\n", result.Name, framework)
 		return
 	}
 	if result.AlreadyPresent {
+		spinner.StopSuccess("No changes needed")
 		fmt.Printf("Feature '%s' is already installed.\n", result.Name)
 		return
 	}
+	spinner.StopSuccess("Feature installed")
 	fmt.Printf("Feature '%s' installed successfully.\n", result.Name)
+	fmt.Println("Next:")
+	fmt.Println("  go test ./...")
 }
 
 func runRunCommand(args []string) {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	open := fs.Bool("open", false, "Open browser after server starts")
+	showHelp := fs.Bool("help", false, "Show run command help")
+	showHelpShort := fs.Bool("h", false, "Show run command help")
 	if err := fs.Parse(args); err != nil {
-		fmt.Printf("Error: %v\n", err)
-		os.Exit(1)
+		exitWithError(
+			"Invalid arguments for 'run' command.",
+			fmt.Sprintf("Details: %v", err),
+			"Run 'lalibela help run' for usage.",
+		)
+	}
+	if *showHelp || *showHelpShort {
+		printRunHelp()
+		return
+	}
+	if fs.NArg() > 0 {
+		exitWithError(
+			fmt.Sprintf("Unexpected argument %q for 'run' command.", fs.Arg(0)),
+			"Usage: lalibela run [--open]",
+		)
+	}
+	if _, err := os.Stat("go.mod"); err != nil {
+		exitWithError(
+			"Could not find go.mod in the current directory.",
+			"Run this command inside your generated project directory.",
+			"Example: cd myapi && lalibela run",
+		)
 	}
 
 	cmdArgs := []string{"run", "."}
@@ -196,8 +302,39 @@ func runRunCommand(args []string) {
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("Error: %v\n", err)
-		os.Exit(1)
+		exitWithError(
+			"Project run failed.",
+			fmt.Sprintf("Details: %v", err),
+			"If port 8080 is busy, set PORT environment variable (for example: PORT=8081).",
+		)
+	}
+}
+
+func runHelpCommand(args []string) {
+	if len(args) == 0 {
+		printRootHelp()
+		return
+	}
+	if len(args) > 1 {
+		exitWithError(
+			"Too many arguments for help command.",
+			"Usage: lalibela help [command]",
+			"Supported commands: add, run",
+		)
+	}
+
+	switch strings.ToLower(strings.TrimSpace(args[0])) {
+	case "add":
+		printAddHelp()
+	case "run":
+		printRunHelp()
+	case "help":
+		printRootHelp()
+	default:
+		exitWithError(
+			fmt.Sprintf("Unknown help topic %q.", args[0]),
+			"Supported help topics: add, run",
+		)
 	}
 }
 
@@ -216,48 +353,92 @@ func printVersion() {
 	fmt.Printf("commit: %s\n", GitCommit)
 }
 
-func printHelp() {
+func printRootHelp() {
 	fmt.Println("Lalibela CLI")
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  lalibela [flags]")
-	fmt.Println("  lalibela help")
-	fmt.Println("  lalibela add <feature>")
-	fmt.Println("  lalibela run [--open]")
+	fmt.Println("  lalibela add <feature> [flags]")
+	fmt.Println("  lalibela run [flags]")
+	fmt.Println("  lalibela help [command]")
 	fmt.Println()
 	fmt.Println("Flags:")
-	fmt.Println("  -h, --h, --help          Show help and exit")
-	fmt.Println("  -fast                    Fast mode: skip prompts and use defaults")
+	fmt.Println("  -h, --help               Show help")
+	fmt.Println("  -v, --version, -version  Show version/build metadata")
+	fmt.Println("  -fast                    Skip prompts and use defaults")
+	fmt.Println("  -y, --yes                Auto-accept prompts and use defaults for missing values")
 	fmt.Println("  -name string             Project name")
 	fmt.Println("  -framework string        Framework: gin|echo|fiber|nethttp")
 	fmt.Println("  -features string         Comma-separated features (Clean,Logger,PostgreSQL,JWT,Docker)")
-	fmt.Println("  -version                 Print version/build metadata and exit")
-	fmt.Println("  -template-list           List all templates and feature support")
-	fmt.Println("  -config string           Optional config file path (defaults to ~/.lalibela.json)")
+	fmt.Println("  -template-list           List scaffold templates and support")
+	fmt.Println("  -config string           Optional config path (default: ~/.lalibela.json)")
 	fmt.Println()
-	fmt.Println("Production features:")
+	fmt.Println("Feature modules:")
 	fmt.Printf("  %s\n", strings.Join(features.KnownFeatures(), ", "))
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  lalibela")
 	fmt.Println("  lalibela -fast")
+	fmt.Println("  lalibela --yes")
 	fmt.Println("  lalibela -name myapi -framework gin -features \"Clean,Logger,JWT\"")
 	fmt.Println("  lalibela add postgres")
 	fmt.Println("  lalibela run --open")
-	fmt.Println("  lalibela -version")
+	fmt.Println("  lalibela help add")
 }
 
-func printCompletionBox(projectName string) {
-	fmt.Println("----------------------------------------")
-	fmt.Println(ui.Green("Project successfully carved."))
-	fmt.Println("----------------------------------------")
+func printAddHelp() {
+	fmt.Println("Lalibela add")
 	fmt.Println()
-	fmt.Println("Next steps:")
-	fmt.Printf("    cd %s\n", projectName)
-	fmt.Println("    go run .")
+	fmt.Println("Usage:")
+	fmt.Println("  lalibela add <feature>")
 	fmt.Println()
-	fmt.Println("Server will start at:")
-	fmt.Println("    http://localhost:8080")
+	fmt.Println("Description:")
+	fmt.Println("  Installs a production feature into the current Lalibela project.")
+	fmt.Println()
+	fmt.Println("Flags:")
+	fmt.Println("  -h, --help  Show add command help")
+	fmt.Println()
+	fmt.Println("Supported features:")
+	fmt.Printf("  %s\n", strings.Join(features.KnownFeatures(), ", "))
+	fmt.Println()
+	fmt.Println("Examples:")
+	fmt.Println("  lalibela add config")
+	fmt.Println("  lalibela add auth")
+	fmt.Println("  lalibela add redis")
+}
+
+func printRunHelp() {
+	fmt.Println("Lalibela run")
+	fmt.Println()
+	fmt.Println("Usage:")
+	fmt.Println("  lalibela run [--open]")
+	fmt.Println()
+	fmt.Println("Description:")
+	fmt.Println("  Runs the generated project using 'go run .'.")
+	fmt.Println()
+	fmt.Println("Flags:")
+	fmt.Println("  --open      Open browser after server startup")
+	fmt.Println("  -h, --help  Show run command help")
+	fmt.Println()
+	fmt.Println("Examples:")
+	fmt.Println("  lalibela run")
+	fmt.Println("  lalibela run --open")
+}
+
+func printCompletionBox(projectName string, selectedFeatures []string) {
+	fmt.Println(ui.Separator())
+	fmt.Println(ui.Green("✓ Project scaffolded!"))
+	fmt.Println(ui.Separator())
+	fmt.Println()
+	fmt.Println("Next:")
+	fmt.Printf("  cd %s\n", projectName)
+	fmt.Println("  go run .")
+	fmt.Println()
+	fmt.Println("Server:")
+	fmt.Println("  http://localhost:8080")
+	for _, suggestion := range featureSuggestions(selectedFeatures) {
+		fmt.Printf("  %s\n", suggestion)
+	}
 	fmt.Println()
 }
 
@@ -273,7 +454,130 @@ func printFastModeSummary(projectName, framework string, features []string) {
 	fmt.Println()
 }
 
-func confirmOverwriteIfNeeded(projectName string) error {
+func handleRootParseError(err error) {
+	message := strings.TrimSpace(err.Error())
+	switch {
+	case strings.Contains(message, "unknown command or argument"):
+		exitWithError(
+			message,
+			"Run 'lalibela help' to see available commands.",
+		)
+	case strings.Contains(message, "flag provided but not defined"):
+		exitWithError(
+			"Unknown flag.",
+			fmt.Sprintf("Details: %s", message),
+			"Run 'lalibela --help' to view supported flags.",
+		)
+	case strings.Contains(message, "unsupported framework"):
+		exitWithError(
+			message,
+			"Supported frameworks: gin, echo, fiber, nethttp.",
+		)
+	case strings.Contains(message, "unsupported feature"):
+		exitWithError(
+			message,
+			"Use -features with values like: Clean,Logger,PostgreSQL,JWT,Docker.",
+		)
+	default:
+		exitWithError(
+			"Could not parse command arguments.",
+			fmt.Sprintf("Details: %s", message),
+			"Run 'lalibela --help' for usage examples.",
+		)
+	}
+}
+
+func printGenerationFailureAndExit(err error) {
+	details := strings.TrimSpace(err.Error())
+	switch {
+	case strings.Contains(details, "go mod init failed"):
+		exitWithError(
+			"Scaffold created files but module initialization failed.",
+			fmt.Sprintf("Details: %s", details),
+			"Check your Go toolchain installation and GOPATH/GOMOD settings.",
+		)
+	case strings.Contains(details, "go mod tidy failed"):
+		exitWithError(
+			"Dependency resolution failed while scaffolding.",
+			fmt.Sprintf("Details: %s", details),
+			"Check internet access and retry, or run 'go mod tidy' manually inside the project.",
+		)
+	case strings.Contains(details, "rollback complete"):
+		exitWithError(
+			"Scaffold failed and rollback completed.",
+			fmt.Sprintf("Details: %s", details),
+			"Fix the reported issue and run the command again.",
+		)
+	default:
+		exitWithError(
+			"Scaffolding failed.",
+			fmt.Sprintf("Details: %s", details),
+			"Run again with valid flags or use 'lalibela --help'.",
+		)
+	}
+}
+
+func exitWithError(message string, suggestions ...string) {
+	fmt.Println(ui.Red("Error: " + message))
+	for _, suggestion := range suggestions {
+		trimmed := strings.TrimSpace(suggestion)
+		if trimmed == "" {
+			continue
+		}
+		fmt.Printf("  -> %s\n", trimmed)
+	}
+	os.Exit(1)
+}
+
+func formatGenerationStep(step string) string {
+	trimmed := strings.TrimSpace(step)
+	if trimmed == "" {
+		return "Working..."
+	}
+	return strings.ToUpper(trimmed[:1]) + trimmed[1:]
+}
+
+func printCompletedSteps(steps []string) {
+	if len(steps) == 0 {
+		return
+	}
+	fmt.Println()
+	fmt.Println("Completed:")
+	for _, step := range steps {
+		fmt.Printf("  %s %s\n", ui.Green("✓"), formatGenerationStep(step))
+	}
+}
+
+func featureSuggestions(selectedFeatures []string) []string {
+	suggestions := make([]string, 0, 5)
+	if hasFeature(selectedFeatures, generator.FeatureJWT) {
+		suggestions = append(suggestions, "JWT selected: wire middleware from internal/middleware/jwt.go on protected routes.")
+	}
+	if hasFeature(selectedFeatures, generator.FeaturePostgreSQL) {
+		suggestions = append(suggestions, "PostgreSQL selected: set DB env vars and verify config/database.go.")
+	}
+	if hasFeature(selectedFeatures, generator.FeatureDocker) {
+		suggestions = append(suggestions, "Docker selected: build with 'docker build -t <app> .' and run with '-p 8080:8080'.")
+	}
+	if hasFeature(selectedFeatures, generator.FeatureClean) {
+		suggestions = append(suggestions, "Clean Architecture selected: start wiring use cases from internal/app/bootstrap.go.")
+	}
+	if hasFeature(selectedFeatures, generator.FeatureLogger) {
+		suggestions = append(suggestions, "Logger selected: initialize logger in config/logger.go during startup.")
+	}
+	return suggestions
+}
+
+func hasFeature(values []string, target string) bool {
+	for _, value := range values {
+		if strings.EqualFold(strings.TrimSpace(value), target) {
+			return true
+		}
+	}
+	return false
+}
+
+func confirmOverwriteIfNeeded(projectName string, assumeYes bool) error {
 	info, err := os.Stat(projectName)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -284,6 +588,11 @@ func confirmOverwriteIfNeeded(projectName string) error {
 
 	if !info.IsDir() {
 		return fmt.Errorf("path %q already exists and is not a directory", projectName)
+	}
+
+	if assumeYes {
+		fmt.Println(ui.Yellow("Directory already exists; overwriting because --yes was provided."))
+		return os.RemoveAll(projectName)
 	}
 
 	fmt.Println(ui.Yellow("⚠ Directory already exists."))

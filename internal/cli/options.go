@@ -26,6 +26,7 @@ type Options struct {
 	Features         []string
 	FeaturesProvided bool
 	FastMode         bool
+	AssumeYes        bool
 	ShowHelp         bool
 	ShowVersion      bool
 	ShowTemplateList bool
@@ -42,12 +43,15 @@ func ParseArgs(args []string) (Options, error) {
 	fs.SetOutput(io.Discard)
 
 	fast := fs.Bool("fast", false, "Fast mode: skip prompts and use defaults")
+	assumeYes := fs.Bool("yes", false, "Auto-accept prompts and use defaults for missing values")
+	assumeYesShort := fs.Bool("y", false, "Auto-accept prompts and use defaults for missing values")
 	showHelp := fs.Bool("help", false, "Show help and exit")
 	showHelpShort := fs.Bool("h", false, "Show help and exit")
 	project := fs.String("name", "", "Project name")
 	framework := fs.String("framework", "", "Framework: gin|echo|fiber|nethttp")
 	features := fs.String("features", "", "Comma-separated features (Clean,Logger,PostgreSQL,JWT,Docker)")
 	showVersion := fs.Bool("version", false, "Print version/build metadata and exit")
+	showVersionShort := fs.Bool("v", false, "Print version/build metadata and exit")
 	templateList := fs.Bool("template-list", false, "List all templates and feature support")
 	configPath := fs.String("config", "", "Optional config file path (defaults to ~/.lalibela.json)")
 
@@ -57,10 +61,13 @@ func ParseArgs(args []string) (Options, error) {
 		}
 		return opts, err
 	}
+	if fs.NArg() > 0 {
+		return opts, fmt.Errorf("unknown command or argument %q", fs.Arg(0))
+	}
 
 	opts = Options{
 		ShowHelp:         *showHelp || *showHelpShort,
-		ShowVersion:      *showVersion,
+		ShowVersion:      *showVersion || *showVersionShort,
 		ShowTemplateList: *templateList,
 	}
 	if opts.ShowHelp || opts.ShowVersion || opts.ShowTemplateList {
@@ -99,6 +106,12 @@ func ParseArgs(args []string) (Options, error) {
 	if _, ok := visited["fast"]; ok {
 		opts.FastMode = *fast
 	}
+	if _, ok := visited["yes"]; ok {
+		opts.AssumeYes = opts.AssumeYes || *assumeYes
+	}
+	if _, ok := visited["y"]; ok {
+		opts.AssumeYes = opts.AssumeYes || *assumeYesShort
+	}
 	if _, ok := visited["name"]; ok {
 		opts.ProjectName = strings.TrimSpace(*project)
 	}
@@ -119,6 +132,18 @@ func ParseArgs(args []string) (Options, error) {
 	}
 
 	if opts.FastMode {
+		if opts.ProjectName == "" {
+			opts.ProjectName = "myapp"
+		}
+		if opts.Framework == "" {
+			opts.Framework = generator.FrameworkGin
+		}
+		if len(opts.Features) == 0 {
+			opts.Features = generator.DefaultFastFeatures()
+		}
+	}
+
+	if opts.AssumeYes {
 		if opts.ProjectName == "" {
 			opts.ProjectName = "myapp"
 		}
