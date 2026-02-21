@@ -27,21 +27,38 @@ jobs:
           set -euo pipefail
 
           key_file="$(mktemp)"
+          raw_key="${GPG_PRIVATE_KEY:-}"
+          raw_key_b64="${GPG_PRIVATE_KEY_BASE64:-}"
 
-          if printf '%s' "${GPG_PRIVATE_KEY}" | grep -q "BEGIN PGP PRIVATE KEY BLOCK"; then
-            # Supports both multiline and \n-escaped armored keys.
-            printf '%b' "${GPG_PRIVATE_KEY}" > "${key_file}"
+          if [ -z "${raw_key}" ] && [ -z "${raw_key_b64}" ]; then
+            echo "GPG key secret is empty. Set GPG_PRIVATE_KEY or GPG_PRIVATE_KEY_BASE64."
+            exit 1
+          fi
+
+          if [ -n "${raw_key_b64}" ]; then
+            printf '%s' "${raw_key_b64}" | base64 --decode > "${key_file}"
           else
-            # Supports base64-encoded key material (recommended for binary exports).
-            if ! printf '%s' "${GPG_PRIVATE_KEY}" | base64 --decode > "${key_file}" 2>/dev/null; then
-              printf '%b' "${GPG_PRIVATE_KEY}" | base64 --decode > "${key_file}"
+            if printf '%s' "${raw_key}" | grep -q "BEGIN PGP PRIVATE KEY BLOCK"; then
+              # Supports both multiline and \n-escaped armored keys.
+              printf '%b' "${raw_key}" > "${key_file}"
+            else
+              # Supports base64-encoded key material passed via GPG_PRIVATE_KEY.
+              if ! printf '%s' "${raw_key}" | base64 --decode > "${key_file}" 2>/dev/null; then
+                printf '%b' "${raw_key}" | base64 --decode > "${key_file}"
+              fi
             fi
+          fi
+
+          if [ ! -s "${key_file}" ]; then
+            echo "Decoded GPG key file is empty. Check secret format."
+            exit 1
           fi
 
           gpg --batch --import "${key_file}"
           gpg --batch --list-secret-keys --keyid-format LONG
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PRIVATE_KEY_BASE64: ${{ secrets.GPG_PRIVATE_KEY_BASE64 }}
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
