@@ -176,6 +176,9 @@ func handleSubcommand(args []string) bool {
 	case "run":
 		runRunCommand(args[1:])
 		return true
+	case "uninstall":
+		runUninstallCommand(args[1:])
+		return true
 	case "-h", "--help":
 		printRootHelp()
 		return true
@@ -312,6 +315,88 @@ func runRunCommand(args []string) {
 	}
 }
 
+func runUninstallCommand(args []string) {
+	fs := flag.NewFlagSet("uninstall", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	force := fs.Bool("force", false, "Uninstall without confirmation prompt")
+	showHelp := fs.Bool("help", false, "Show uninstall command help")
+	showHelpShort := fs.Bool("h", false, "Show uninstall command help")
+	if err := fs.Parse(args); err != nil {
+		exitWithError(
+			"Invalid arguments for 'uninstall' command.",
+			fmt.Sprintf("Details: %v", err),
+			"Run 'lalibela help uninstall' for usage.",
+		)
+	}
+	if *showHelp || *showHelpShort {
+		printUninstallHelp()
+		return
+	}
+	if fs.NArg() > 0 {
+		exitWithError(
+			fmt.Sprintf("Unexpected argument %q for 'uninstall' command.", fs.Arg(0)),
+			"Usage: lalibela uninstall [--force]",
+		)
+	}
+
+	executablePath, err := os.Executable()
+	if err != nil {
+		exitWithError(
+			"Could not determine Lalibela executable path.",
+			fmt.Sprintf("Details: %v", err),
+		)
+	}
+	executablePath = strings.TrimSpace(executablePath)
+	if executablePath == "" {
+		exitWithError("Could not determine Lalibela executable path.")
+	}
+
+	if _, err := os.Stat(executablePath); err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println("Binary not found.")
+			os.Exit(1)
+		}
+		exitWithError(
+			"Unable to access Lalibela binary.",
+			fmt.Sprintf("Details: %v", err),
+		)
+	}
+
+	if !*force {
+		fmt.Printf("Uninstall Lalibela CLI from %s? (y/N): ", executablePath)
+		reader := bufio.NewReader(os.Stdin)
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			exitWithError(
+				"Could not read uninstall confirmation.",
+				fmt.Sprintf("Details: %v", err),
+			)
+		}
+		answer := strings.ToLower(strings.TrimSpace(input))
+		if answer != "y" && answer != "yes" {
+			fmt.Println("Uninstall cancelled.")
+			return
+		}
+	}
+
+	if err := os.Remove(executablePath); err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println("Binary not found.")
+			os.Exit(1)
+		}
+		if isPermissionDenied(err) {
+			fmt.Println("Permission denied. Try running with sudo or administrator privileges.")
+			os.Exit(1)
+		}
+		exitWithError(
+			"Failed to uninstall Lalibela CLI.",
+			fmt.Sprintf("Details: %v", err),
+		)
+	}
+
+	fmt.Println("Lalibela CLI uninstalled successfully.")
+}
+
 func runHelpCommand(args []string) {
 	if len(args) == 0 {
 		printRootHelp()
@@ -321,7 +406,7 @@ func runHelpCommand(args []string) {
 		exitWithError(
 			"Too many arguments for help command.",
 			"Usage: lalibela help [command]",
-			"Supported commands: add, run",
+			"Supported commands: add, run, uninstall",
 		)
 	}
 
@@ -330,12 +415,14 @@ func runHelpCommand(args []string) {
 		printAddHelp()
 	case "run":
 		printRunHelp()
+	case "uninstall":
+		printUninstallHelp()
 	case "help":
 		printRootHelp()
 	default:
 		exitWithError(
 			fmt.Sprintf("Unknown help topic %q.", args[0]),
-			"Supported help topics: add, run",
+			"Supported help topics: add, run, uninstall",
 		)
 	}
 }
@@ -406,6 +493,7 @@ func printRootHelp() {
 	fmt.Println("  lalibela [flags]")
 	fmt.Println("  lalibela add <feature> [flags]")
 	fmt.Println("  lalibela run [flags]")
+	fmt.Println("  lalibela uninstall [flags]")
 	fmt.Println("  lalibela help [command]")
 	fmt.Println()
 	fmt.Println(ui.SectionHeader("Flags"))
@@ -429,6 +517,7 @@ func printRootHelp() {
 	fmt.Println("  lalibela -name myapi -framework gin -features \"Clean,Logger,JWT\"")
 	fmt.Println("  lalibela add postgres")
 	fmt.Println("  lalibela run --open")
+	fmt.Println("  lalibela uninstall --force")
 	fmt.Println("  lalibela help add")
 }
 
@@ -469,6 +558,25 @@ func printRunHelp() {
 	fmt.Println(ui.SectionHeader("Examples"))
 	fmt.Println("  lalibela run")
 	fmt.Println("  lalibela run --open")
+}
+
+func printUninstallHelp() {
+	fmt.Println(ui.Bold(ui.Cyan("Lalibela uninstall")))
+	fmt.Println()
+	fmt.Println(ui.SectionHeader("Usage"))
+	fmt.Println("  lalibela uninstall [--force]")
+	fmt.Println()
+	fmt.Println(ui.SectionHeader("Description"))
+	fmt.Println("  Removes only the Lalibela CLI binary from the current executable path.")
+	fmt.Println("  User config files and generated projects are not removed.")
+	fmt.Println()
+	fmt.Println(ui.SectionHeader("Flags"))
+	fmt.Println("  --force     Skip uninstall confirmation prompt")
+	fmt.Println("  -h, --help  Show uninstall command help")
+	fmt.Println()
+	fmt.Println(ui.SectionHeader("Examples"))
+	fmt.Println("  lalibela uninstall")
+	fmt.Println("  lalibela uninstall --force")
 }
 
 func printCompletionBox(projectName string, selectedFeatures []string) {
@@ -621,6 +729,20 @@ func hasFeature(values []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func isPermissionDenied(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, os.ErrPermission) {
+		return true
+	}
+
+	text := strings.ToLower(err.Error())
+	return strings.Contains(text, "permission denied") ||
+		strings.Contains(text, "access is denied") ||
+		strings.Contains(text, "operation not permitted")
 }
 
 func confirmOverwriteIfNeeded(projectName string, assumeYes bool) error {
