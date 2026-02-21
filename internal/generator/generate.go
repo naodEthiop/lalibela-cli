@@ -12,6 +12,7 @@ import (
 
 	lalibelacli "github.com/naodEthiop/lalibela-cli"
 	"github.com/naodEthiop/lalibela-cli/internal/features"
+	"github.com/naodEthiop/lalibela-cli/internal/modules"
 	"github.com/naodEthiop/lalibela-cli/internal/utils"
 )
 
@@ -260,6 +261,10 @@ func GenerateProject(opts Options) (retErr error) {
 		return err
 	}
 	opts.Features = normalizedFeatures
+
+	if err := modules.EnsureScaffoldModules(opts.Framework, opts.Features); err != nil {
+		return fmt.Errorf("preparing lazy modules: %w", err)
+	}
 
 	templateFS := opts.TemplateFS
 	if templateFS == nil {

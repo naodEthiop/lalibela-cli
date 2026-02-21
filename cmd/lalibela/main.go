@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/naodEthiop/lalibela-cli/internal/features"
 	"github.com/naodEthiop/lalibela-cli/internal/generator"
 	"github.com/naodEthiop/lalibela-cli/internal/ui"
+	"github.com/naodEthiop/lalibela-cli/internal/updater"
 	"github.com/naodEthiop/lalibela-cli/internal/utils"
 	"golang.org/x/term"
 )
@@ -175,6 +177,9 @@ func handleSubcommand(args []string) bool {
 		return true
 	case "run":
 		runRunCommand(args[1:])
+		return true
+	case "update":
+		runUpdateCommand(args[1:])
 		return true
 	case "uninstall":
 		runUninstallCommand(args[1:])
@@ -388,13 +393,92 @@ func runUninstallCommand(args []string) {
 			fmt.Println("Permission denied. Try running with sudo or administrator privileges.")
 			os.Exit(1)
 		}
+		if isBinaryInUse(err) {
+			fmt.Println("Binary is currently in use. Close running Lalibela processes and try again.")
+			os.Exit(1)
+		}
 		exitWithError(
 			"Failed to uninstall Lalibela CLI.",
 			fmt.Sprintf("Details: %v", err),
 		)
 	}
 
+	configRoot, err := lalibelaConfigRoot()
+	if err == nil {
+		if info, statErr := os.Stat(configRoot); statErr == nil && info.IsDir() {
+			fmt.Printf("Also remove %s? (y/N): ", configRoot)
+			reader := bufio.NewReader(os.Stdin)
+			input, readErr := reader.ReadString('\n')
+			if readErr == nil {
+				answer := strings.ToLower(strings.TrimSpace(input))
+				if answer == "y" || answer == "yes" {
+					if removeErr := os.RemoveAll(configRoot); removeErr != nil {
+						if isPermissionDenied(removeErr) {
+							fmt.Println("Permission denied. Try running with sudo or administrator privileges.")
+							os.Exit(1)
+						}
+						if isBinaryInUse(removeErr) {
+							fmt.Println("Binary is currently in use. Close running Lalibela processes and try again.")
+							os.Exit(1)
+						}
+						exitWithError(
+							"Failed to remove Lalibela config directory.",
+							fmt.Sprintf("Details: %v", removeErr),
+						)
+					}
+				}
+			}
+		}
+	}
+
 	fmt.Println("Lalibela CLI uninstalled successfully.")
+}
+
+func runUpdateCommand(args []string) {
+	fs := flag.NewFlagSet("update", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	showHelp := fs.Bool("help", false, "Show update command help")
+	showHelpShort := fs.Bool("h", false, "Show update command help")
+	if err := fs.Parse(args); err != nil {
+		exitWithError(
+			"Invalid arguments for 'update' command.",
+			fmt.Sprintf("Details: %v", err),
+		)
+	}
+	if *showHelp || *showHelpShort {
+		fmt.Println("Usage: lalibela update")
+		return
+	}
+	if fs.NArg() > 0 {
+		exitWithError(
+			fmt.Sprintf("Unexpected argument %q for 'update' command.", fs.Arg(0)),
+			"Usage: lalibela update",
+		)
+	}
+
+	executablePath, err := os.Executable()
+	if err != nil {
+		exitWithError(
+			"Could not determine Lalibela executable path.",
+			fmt.Sprintf("Details: %v", err),
+		)
+	}
+
+	err = updater.SelfUpdate(updater.Options{
+		CurrentVersion: Version,
+		ExecutablePath: executablePath,
+	})
+	if err != nil {
+		if errors.Is(err, updater.ErrAlreadyLatest) {
+			fmt.Println("Lalibela CLI is already up to date.")
+			return
+		}
+		exitWithError(
+			"Update failed.",
+			fmt.Sprintf("Details: %v", err),
+		)
+	}
+	fmt.Println("Lalibela CLI updated successfully.")
 }
 
 func runHelpCommand(args []string) {
@@ -746,6 +830,24 @@ func isPermissionDenied(err error) bool {
 	return strings.Contains(text, "permission denied") ||
 		strings.Contains(text, "access is denied") ||
 		strings.Contains(text, "operation not permitted")
+}
+
+func isBinaryInUse(err error) bool {
+	if err == nil {
+		return false
+	}
+	text := strings.ToLower(err.Error())
+	return strings.Contains(text, "text file busy") ||
+		strings.Contains(text, "used by another process") ||
+		strings.Contains(text, "being used by another process")
+}
+
+func lalibelaConfigRoot() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".lalibela"), nil
 }
 
 func confirmOverwriteIfNeeded(projectName string, assumeYes bool) error {
