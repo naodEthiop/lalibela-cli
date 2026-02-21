@@ -24,7 +24,22 @@ jobs:
 
       - name: Import GPG key
         run: |
-          echo "${GPG_PRIVATE_KEY}" | gpg --batch --import
+          set -euo pipefail
+
+          key_file="$(mktemp)"
+
+          if printf '%s' "${GPG_PRIVATE_KEY}" | grep -q "BEGIN PGP PRIVATE KEY BLOCK"; then
+            # Supports both multiline and \n-escaped armored keys.
+            printf '%b' "${GPG_PRIVATE_KEY}" > "${key_file}"
+          else
+            # Supports base64-encoded key material (recommended for binary exports).
+            if ! printf '%s' "${GPG_PRIVATE_KEY}" | base64 --decode > "${key_file}" 2>/dev/null; then
+              printf '%b' "${GPG_PRIVATE_KEY}" | base64 --decode > "${key_file}"
+            fi
+          fi
+
+          gpg --batch --import "${key_file}"
+          gpg --batch --list-secret-keys --keyid-format LONG
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
