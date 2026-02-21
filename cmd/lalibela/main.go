@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime/debug"
 	"strings"
 
 	"github.com/naodEthiop/lalibela-cli/internal/cli"
@@ -27,11 +28,12 @@ var (
 var errGenerationCancelled = errors.New("generation cancelled")
 
 func main() {
+	ui.InitTerminal()
+	hydrateBuildMetadata()
+
 	if handleSubcommand(os.Args[1:]) {
 		return
 	}
-
-	ui.InitTerminal()
 
 	opts, err := cli.ParseArgs(os.Args[1:])
 	if err != nil {
@@ -347,22 +349,66 @@ func printTemplateList() {
 	}
 }
 
+func hydrateBuildMetadata() {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		hydrateBuildDateFromExecutable()
+		return
+	}
+
+	if (Version == "" || Version == "dev" || Version == "0.0.0") && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		Version = strings.TrimSpace(info.Main.Version)
+	}
+	if (GitCommit == "" || GitCommit == "dev") && buildSetting(info, "vcs.revision") != "" {
+		GitCommit = buildSetting(info, "vcs.revision")
+	}
+	if (BuildDate == "" || BuildDate == "unknown") && buildSetting(info, "vcs.time") != "" {
+		BuildDate = buildSetting(info, "vcs.time")
+	}
+	hydrateBuildDateFromExecutable()
+}
+
+func buildSetting(info *debug.BuildInfo, key string) string {
+	for _, setting := range info.Settings {
+		if setting.Key == key {
+			return strings.TrimSpace(setting.Value)
+		}
+	}
+	return ""
+}
+
+func hydrateBuildDateFromExecutable() {
+	if BuildDate != "" && BuildDate != "unknown" {
+		return
+	}
+
+	exePath, err := os.Executable()
+	if err != nil {
+		return
+	}
+	stat, err := os.Stat(exePath)
+	if err != nil {
+		return
+	}
+	BuildDate = stat.ModTime().UTC().Format("2006-01-02T15:04:05Z")
+}
+
 func printVersion() {
-	fmt.Printf("lalibela %s\n", Version)
-	fmt.Printf("build date: %s\n", BuildDate)
-	fmt.Printf("commit: %s\n", GitCommit)
+	fmt.Printf("%s %s\n", ui.Bold(ui.Cyan("lalibela")), ui.Bold(Version))
+	fmt.Printf("%s %s\n", ui.Dim("build date:"), ui.Yellow(BuildDate))
+	fmt.Printf("%s %s\n", ui.Dim("commit:"), ui.Yellow(GitCommit))
 }
 
 func printRootHelp() {
-	fmt.Println("Lalibela CLI")
+	fmt.Println(ui.Bold(ui.Cyan("Lalibela CLI")))
 	fmt.Println()
-	fmt.Println("Usage:")
+	fmt.Println(ui.SectionHeader("Usage"))
 	fmt.Println("  lalibela [flags]")
 	fmt.Println("  lalibela add <feature> [flags]")
 	fmt.Println("  lalibela run [flags]")
 	fmt.Println("  lalibela help [command]")
 	fmt.Println()
-	fmt.Println("Flags:")
+	fmt.Println(ui.SectionHeader("Flags"))
 	fmt.Println("  -h, --help               Show help")
 	fmt.Println("  -v, --version, -version  Show version/build metadata")
 	fmt.Println("  -fast                    Skip prompts and use defaults")
@@ -373,10 +419,10 @@ func printRootHelp() {
 	fmt.Println("  -template-list           List scaffold templates and support")
 	fmt.Println("  -config string           Optional config path (default: ~/.lalibela.json)")
 	fmt.Println()
-	fmt.Println("Feature modules:")
+	fmt.Println(ui.SectionHeader("Feature modules"))
 	fmt.Printf("  %s\n", strings.Join(features.KnownFeatures(), ", "))
 	fmt.Println()
-	fmt.Println("Examples:")
+	fmt.Println(ui.SectionHeader("Examples"))
 	fmt.Println("  lalibela")
 	fmt.Println("  lalibela -fast")
 	fmt.Println("  lalibela --yes")
@@ -387,40 +433,40 @@ func printRootHelp() {
 }
 
 func printAddHelp() {
-	fmt.Println("Lalibela add")
+	fmt.Println(ui.Bold(ui.Cyan("Lalibela add")))
 	fmt.Println()
-	fmt.Println("Usage:")
+	fmt.Println(ui.SectionHeader("Usage"))
 	fmt.Println("  lalibela add <feature>")
 	fmt.Println()
-	fmt.Println("Description:")
+	fmt.Println(ui.SectionHeader("Description"))
 	fmt.Println("  Installs a production feature into the current Lalibela project.")
 	fmt.Println()
-	fmt.Println("Flags:")
+	fmt.Println(ui.SectionHeader("Flags"))
 	fmt.Println("  -h, --help  Show add command help")
 	fmt.Println()
-	fmt.Println("Supported features:")
+	fmt.Println(ui.SectionHeader("Supported features"))
 	fmt.Printf("  %s\n", strings.Join(features.KnownFeatures(), ", "))
 	fmt.Println()
-	fmt.Println("Examples:")
+	fmt.Println(ui.SectionHeader("Examples"))
 	fmt.Println("  lalibela add config")
 	fmt.Println("  lalibela add auth")
 	fmt.Println("  lalibela add redis")
 }
 
 func printRunHelp() {
-	fmt.Println("Lalibela run")
+	fmt.Println(ui.Bold(ui.Cyan("Lalibela run")))
 	fmt.Println()
-	fmt.Println("Usage:")
+	fmt.Println(ui.SectionHeader("Usage"))
 	fmt.Println("  lalibela run [--open]")
 	fmt.Println()
-	fmt.Println("Description:")
+	fmt.Println(ui.SectionHeader("Description"))
 	fmt.Println("  Runs the generated project using 'go run .'.")
 	fmt.Println()
-	fmt.Println("Flags:")
+	fmt.Println(ui.SectionHeader("Flags"))
 	fmt.Println("  --open      Open browser after server startup")
 	fmt.Println("  -h, --help  Show run command help")
 	fmt.Println()
-	fmt.Println("Examples:")
+	fmt.Println(ui.SectionHeader("Examples"))
 	fmt.Println("  lalibela run")
 	fmt.Println("  lalibela run --open")
 }
