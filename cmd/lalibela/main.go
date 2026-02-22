@@ -56,6 +56,7 @@ func main() {
 	}
 
 	ui.RenderBanner()
+	fmt.Printf("%s %s\n\n", ui.Dim("version:"), ui.Yellow(Version))
 
 	projectName := opts.ProjectName
 	framework := opts.Framework
@@ -149,6 +150,7 @@ func main() {
 		ProjectName: projectName,
 		Framework:   framework,
 		Features:    selectedFeatures,
+		CLIVersion:  Version,
 		Status: func(step string, current int, total int) {
 			stepLogs = append(stepLogs, step)
 			spinner.Update(fmt.Sprintf("(%d/%d) %s", current, total, formatGenerationStep(step)))

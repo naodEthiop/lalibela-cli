@@ -24,7 +24,7 @@ func renderStartupBlock(framework string, port int, duration time.Duration) {
 
 	fmt.Println()
 	fmt.Println(separator)
-	fmt.Printf(" LALIBELA v1.0.0  ready in %dms\n\n", durationMS)
+	fmt.Printf(" LALIBELA v{{ .CLIVersion }}  ready in %dms\n\n", durationMS)
 	fmt.Printf(" %s  Framework:  %s\n", arrow, frameworkLabel(framework))
 	fmt.Printf(" %s  Mode:       development\n", arrow)
 	fmt.Printf(" %s  Local:      %s\n", arrow, localURL)

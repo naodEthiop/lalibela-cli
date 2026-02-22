@@ -97,6 +97,7 @@ type TemplateData struct {
 	ModuleName  string
 	ProjectName string
 	Framework   string
+	CLIVersion  string
 	Features    FeatureSet
 }
 
@@ -113,6 +114,7 @@ type Options struct {
 	ProjectName string
 	Framework   string
 	Features    []string
+	CLIVersion  string
 	RootDir     string
 	TemplateFS  fs.FS
 	Runner      CommandRunner
@@ -217,11 +219,16 @@ func TemplateCatalog() []TemplateInfo {
 	}
 }
 
-func BuildTemplateData(projectName, framework string, features []string) TemplateData {
+func BuildTemplateData(projectName, framework, cliVersion string, features []string) TemplateData {
+	normalizedVersion := strings.TrimSpace(cliVersion)
+	if normalizedVersion == "" {
+		normalizedVersion = "dev"
+	}
 	return TemplateData{
 		ModuleName:  projectName,
 		ProjectName: projectName,
 		Framework:   framework,
+		CLIVersion:  normalizedVersion,
 		Features:    FeatureSetFromNames(features),
 	}
 }
@@ -312,7 +319,7 @@ func GenerateProject(opts Options) (retErr error) {
 	ctx := &generationContext{
 		templateFS:  templateFS,
 		projectPath: projectPath,
-		data:        BuildTemplateData(opts.ProjectName, opts.Framework, opts.Features),
+		data:        BuildTemplateData(opts.ProjectName, opts.Framework, opts.CLIVersion, opts.Features),
 		runner:      runner,
 	}
 
