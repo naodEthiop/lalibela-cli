@@ -76,6 +76,20 @@ macOS/Linux:
 curl -fsSL https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/scripts/install.sh | sh
 ```
 
+### Option 4: Package managers (short commands)
+
+Windows Winget (after package approval):
+
+```powershell
+winget install NaodEthiop.Lalibela
+```
+
+Windows Scoop:
+
+```powershell
+scoop install https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/packaging/scoop/lalibela.json
+```
+
 ---
 
 ## Quick Start
