@@ -50,6 +50,20 @@ go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
 2. Download your OS/architecture archive
 3. Extract and add `lalibela` to your `PATH`
 
+### Option 3: One-command installer
+
+Windows (PowerShell):
+
+```powershell
+iwr https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/scripts/install.ps1 -UseBasicParsing | iex
+```
+
+macOS/Linux:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/scripts/install.sh | sh
+```
+
 ---
 
 ## Quick Start
