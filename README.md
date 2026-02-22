@@ -44,6 +44,18 @@ This philosophy guides the CLI design: practical foundations, clear structure, a
 go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
 ```
 
+Windows (auto-configure PATH after `go install`):
+
+PowerShell:
+```powershell
+Invoke-Expression ((Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/scripts/install-go.ps1").Content)
+```
+
+Command Prompt (`cmd.exe`):
+```cmd
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-Expression ((Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/scripts/install-go.ps1').Content)"
+```
+
 ### Option 2: Download prebuilt binaries
 
 1. Open Releases: `https://github.com/naodEthiop/lalibela-cli/releases`
@@ -55,7 +67,7 @@ go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
 Windows (PowerShell):
 
 ```powershell
-iwr https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/scripts/install.ps1 -UseBasicParsing | iex
+Invoke-Expression ((Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/scripts/install.ps1").Content)
 ```
 
 macOS/Linux:
