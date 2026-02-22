@@ -6,7 +6,7 @@ This folder contains manifests you can submit to Windows package managers.
 
 Manifest path:
 
-`packaging/winget/manifests/NaodEthiop/Lalibela/0.1.21/`
+`packaging/winget/manifests/NaodEthiop/Lalibela/0.1.23/`
 
 Submit these files to:
 

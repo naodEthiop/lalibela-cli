@@ -1,12 +1,12 @@
 {
-  "version": "0.1.21",
+  "version": "0.1.23",
   "description": "Production-grade backend scaffolding for Go projects",
   "homepage": "https://github.com/naodEthiop/lalibela-cli",
   "license": "MIT",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/naodEthiop/lalibela-cli/releases/download/v0.1.21/lalibela_0.1.21_windows_amd64.zip",
-      "hash": "329b7bf2d16115c1e41ea8e457649fbf221782d082da99fb5840d852cd479542"
+      "url": "https://github.com/naodEthiop/lalibela-cli/releases/download/v0.1.23/lalibela_0.1.23_windows_amd64.zip",
+      "hash": "10f26792a04dfd1dfe5c9ea02dcb18931560c0b44bcf8cd5757e12e99ad8fc7b"
     }
   },
   "bin": "lalibela.exe",
