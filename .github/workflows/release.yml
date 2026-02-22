@@ -26,35 +26,48 @@ jobs:
         run: |
           set -euo pipefail
 
-          key_file="$(mktemp)"
           raw_key="${GPG_PRIVATE_KEY:-${GPGPRIVATEKEY:-}}"
           raw_key_b64="${GPG_PRIVATE_KEY_BASE64:-${GPGPRIVATEKEY_BASE64:-}}"
 
           if [ -z "${raw_key}" ] && [ -z "${raw_key_b64}" ]; then
-            echo "GPG key secret is empty. Set GPG_PRIVATE_KEY/GPG_PRIVATE_KEY_BASE64 or GPGPRIVATEKEY."
+            echo "GPG key secret is empty. Set GPG_PRIVATE_KEY/GPG_PRIVATE_KEY_BASE64 or GPGPRIVATEKEY/GPGPRIVATEKEY_BASE64."
             exit 1
           fi
 
+          imported=0
+          b64_file="$(mktemp)"
+          raw_file="$(mktemp)"
+
+          # Try dedicated BASE64 secret first (binary export recommended).
           if [ -n "${raw_key_b64}" ]; then
-            printf '%s' "${raw_key_b64}" | base64 --decode > "${key_file}"
-          else
-            if printf '%s' "${raw_key}" | grep -q "BEGIN PGP PRIVATE KEY BLOCK"; then
-              # Supports both multiline and \n-escaped armored keys.
-              printf '%b' "${raw_key}" > "${key_file}"
-            else
-              # Supports base64-encoded key material passed via GPG_PRIVATE_KEY.
-              if ! printf '%s' "${raw_key}" | base64 --decode > "${key_file}" 2>/dev/null; then
-                printf '%b' "${raw_key}" | base64 --decode > "${key_file}"
+            if printf '%s' "${raw_key_b64}" | base64 --decode > "${b64_file}" 2>/dev/null; then
+              if [ -s "${b64_file}" ] && gpg --batch --import "${b64_file}" >/dev/null 2>&1; then
+                imported=1
               fi
             fi
           fi
 
-          if [ ! -s "${key_file}" ]; then
-            echo "Decoded GPG key file is empty. Check secret format."
+          # Fallback: raw secret (multiline armored, \n-escaped armored, or base64 text).
+          if [ "${imported}" -eq 0 ] && [ -n "${raw_key}" ]; then
+            printf '%b' "${raw_key}" > "${raw_file}"
+            if [ -s "${raw_file}" ] && gpg --batch --import "${raw_file}" >/dev/null 2>&1; then
+              imported=1
+            else
+              # Some users store base64 in the raw secret; try decoding it.
+              if printf '%s' "${raw_key}" | base64 --decode > "${raw_file}" 2>/dev/null; then
+                if [ -s "${raw_file}" ] && gpg --batch --import "${raw_file}" >/dev/null 2>&1; then
+                  imported=1
+                fi
+              fi
+            fi
+          fi
+
+          if [ "${imported}" -eq 0 ]; then
+            echo "No valid OpenPGP private key could be imported from provided secrets."
+            echo "Use GPG_PRIVATE_KEY_BASE64 (preferred) from binary export, or a valid armored GPG_PRIVATE_KEY."
             exit 1
           fi
 
-          gpg --batch --import "${key_file}"
           gpg --batch --list-secret-keys --keyid-format LONG
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
