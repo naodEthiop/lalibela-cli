@@ -27,11 +27,11 @@ jobs:
           set -euo pipefail
 
           key_file="$(mktemp)"
-          raw_key="${GPG_PRIVATE_KEY:-}"
-          raw_key_b64="${GPG_PRIVATE_KEY_BASE64:-}"
+          raw_key="${GPG_PRIVATE_KEY:-${GPGPRIVATEKEY:-}}"
+          raw_key_b64="${GPG_PRIVATE_KEY_BASE64:-${GPGPRIVATEKEY_BASE64:-}}"
 
           if [ -z "${raw_key}" ] && [ -z "${raw_key_b64}" ]; then
-            echo "GPG key secret is empty. Set GPG_PRIVATE_KEY or GPG_PRIVATE_KEY_BASE64."
+            echo "GPG key secret is empty. Set GPG_PRIVATE_KEY/GPG_PRIVATE_KEY_BASE64 or GPGPRIVATEKEY."
             exit 1
           fi
 
@@ -59,6 +59,21 @@ jobs:
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PRIVATE_KEY_BASE64: ${{ secrets.GPG_PRIVATE_KEY_BASE64 }}
+          GPGPRIVATEKEY: ${{ secrets.GPGPRIVATEKEY }}
+          GPGPRIVATEKEY_BASE64: ${{ secrets.GPGPRIVATEKEY_BASE64 }}
+
+      - name: Normalize signing key id
+        run: |
+          set -euo pipefail
+          signing_id="${GPG_SIGNING_KEY_ID:-${GPGSIGNINGKEYID:-}}"
+          if [ -z "${signing_id}" ]; then
+            echo "GPG signing key id is empty. Set GPG_SIGNING_KEY_ID or GPGSIGNINGKEYID."
+            exit 1
+          fi
+          echo "GPG_SIGNING_KEY_ID=${signing_id}" >> "${GITHUB_ENV}"
+        env:
+          GPG_SIGNING_KEY_ID: ${{ secrets.GPG_SIGNING_KEY_ID }}
+          GPGSIGNINGKEYID: ${{ secrets.GPGSIGNINGKEYID }}
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
