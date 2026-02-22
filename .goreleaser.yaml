@@ -38,7 +38,8 @@ checksum:
   algorithm: sha256
 
 signs:
-  - artifacts: checksum
+  - id: checksum-signature
+    artifacts: checksum
     signature: "${artifact}.sig"
     cmd: gpg
     args:
@@ -51,7 +52,8 @@ signs:
       - --output
       - "${signature}"
       - "${artifact}"
-  - artifacts: archive
+  - id: archive-signature
+    artifacts: archive
     signature: "${artifact}.sig"
     cmd: gpg
     args:
@@ -75,4 +77,3 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
-
