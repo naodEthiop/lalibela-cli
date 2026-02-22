@@ -4,3 +4,16 @@
 *.tmp
 *.log
 *.bak   
+*.gpg
+*.key
+*.swp
+*.swo
+*.DS_Store
+*.env
+*.pem
+*.crt
+*.csr
+*.pfx
+*.p12
+*.zip
+*.tar.gz    
