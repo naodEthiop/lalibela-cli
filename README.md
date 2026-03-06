@@ -1,9 +1,22 @@
 ﻿# Lalibela CLI
-
+![Project Logo](/logo.png)
 Production-grade backend scaffolding for Go teams.  
 **Lalibela** gives you a fast, modern developer experience (inspired by Vite), but built as a lightweight Go CLI with zero runtime dependencies.
 
 ---
+
+## Table of Contents
+
+- [Why Lalibela?](#why-lalibela)
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [CLI Usage](#cli-usage)
+- [Example Generated Project Structure](#example-generated-project-structure)
+- [Configuration](#configuration-lalibelajson--lalibela)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Why Lalibela?
 
@@ -38,31 +51,35 @@ This philosophy guides the CLI design: practical foundations, clear structure, a
 
 ## Installation
 
-### Option 1: Install with Go
+### Windows (recommended): WinGet
 
-```bash
-go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
-```
+If you’re on Windows, **WinGet is the best option** (no Go required to run the CLI):
 
-Windows (auto-configure PATH after `go install`):
-
-PowerShell:
 ```powershell
-Invoke-Expression ((Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/scripts/install-go.ps1").Content)
+winget install NaodEthiop.Lalibela
 ```
 
-Command Prompt (`cmd.exe`):
-```cmd
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-Expression ((Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/scripts/install-go.ps1').Content)"
+Upgrade:
+
+```powershell
+winget upgrade NaodEthiop.Lalibela
 ```
 
-### Option 2: Download prebuilt binaries
+Uninstall:
+
+```powershell
+winget uninstall NaodEthiop.Lalibela
+```
+
+If `winget` can’t find the package yet, use [Releases](#download-prebuilt-binaries) or [Install with Go](#install-with-go).
+
+### Download prebuilt binaries
 
 1. Open Releases: `https://github.com/naodEthiop/lalibela-cli/releases`
 2. Download your OS/architecture archive
 3. Extract and add `lalibela` to your `PATH`
 
-### Option 3: One-command installer
+### One-command installer
 
 Windows (PowerShell):
 
@@ -76,15 +93,27 @@ macOS/Linux:
 curl -fsSL https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/scripts/install.sh | sh
 ```
 
-### Option 4: Package managers (short commands)
+### Install with Go
 
-Windows Winget (after package approval):
+Go is only required if you install/build from source. (You’ll also need Go to run the generated project.)
 
-```powershell
-winget install NaodEthiop.Lalibela
+```bash
+go install github.com/naodEthiop/lalibela-cli/cmd/lalibela@latest
 ```
 
-Windows Scoop:
+Windows (helper to install Go and configure PATH):
+
+PowerShell:
+```powershell
+Invoke-Expression ((Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/scripts/install-go.ps1").Content)
+```
+
+Command Prompt (`cmd.exe`):
+```cmd
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-Expression ((Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/scripts/install-go.ps1').Content)"
+```
+
+### Windows: Scoop
 
 ```powershell
 scoop install https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/packaging/scoop/lalibela.json
@@ -94,6 +123,8 @@ scoop install https://raw.githubusercontent.com/naodEthiop/lalibela-cli/main/pac
 
 ## Quick Start
 
+Lalibela scaffolds a Go project. **You need Go installed to run the generated project** (even if you installed Lalibela via WinGet).
+
 ```bash
 # 1) Scaffold a new project
 lalibela
@@ -101,8 +132,8 @@ lalibela
 # 2) Move into the generated folder
 cd myapp
 
-# 3) Start development server
-go run .
+# 3) Start development server (wrapper around: go run .)
+lalibela run --open
 ```
 
 Non-interactive:
@@ -110,7 +141,7 @@ Non-interactive:
 ```bash
 lalibela --yes -name myapi -framework gin
 cd myapi
-go run .
+lalibela run
 ```
 
 ---
@@ -129,6 +160,7 @@ lalibela help [command]
 ```bash
 lalibela add <feature>
 lalibela run [--open]
+lalibela update
 lalibela uninstall [--force]
 ```
 
@@ -154,6 +186,7 @@ lalibela add postgres
 lalibela add redis
 lalibela run
 lalibela run --open
+lalibela update
 lalibela uninstall
 lalibela uninstall --force
 lalibela help add
@@ -194,7 +227,7 @@ myapi/
 
 ---
 
-## Configuration (`~/.lalibela.json`)
+## Configuration (`~/.lalibela.json` + `~/.lalibela/`)
 
 ```json
 {
@@ -210,6 +243,8 @@ Use a custom config file:
 ```bash
 lalibela -config ./lalibela.json
 ```
+
+Lalibela also stores local state (for example, installed feature metadata) under `~/.lalibela/`.
 
 ---
 
