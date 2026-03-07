@@ -17,18 +17,27 @@ import (
 )
 
 const (
-	FrameworkGin     = "gin"
-	FrameworkEcho    = "echo"
-	FrameworkFiber   = "fiber"
+	// FrameworkGin is the framework identifier for Gin.
+	FrameworkGin = "gin"
+	// FrameworkEcho is the framework identifier for Echo.
+	FrameworkEcho = "echo"
+	// FrameworkFiber is the framework identifier for Fiber.
+	FrameworkFiber = "fiber"
+	// FrameworkNetHTTP is the framework identifier for net/http.
 	FrameworkNetHTTP = "nethttp"
 )
 
 const (
-	FeatureClean      = "Clean"
-	FeatureLogger     = "Logger"
+	// FeatureClean is the canonical feature name for Clean Architecture.
+	FeatureClean = "Clean"
+	// FeatureLogger is the canonical feature name for logger support.
+	FeatureLogger = "Logger"
+	// FeaturePostgreSQL is the canonical feature name for PostgreSQL support.
 	FeaturePostgreSQL = "PostgreSQL"
-	FeatureJWT        = "JWT"
-	FeatureDocker     = "Docker"
+	// FeatureJWT is the canonical feature name for JWT auth helpers.
+	FeatureJWT = "JWT"
+	// FeatureDocker is the canonical feature name for Docker support.
+	FeatureDocker = "Docker"
 )
 
 var supportedFrameworks = []string{
@@ -64,6 +73,7 @@ var featureAliasToCanonical = map[string]string{
 	"docker":             FeatureDocker,
 }
 
+// FeatureSet is the normalized set of scaffold features selected for a project.
 type FeatureSet struct {
 	Clean      bool
 	Logger     bool
@@ -72,6 +82,7 @@ type FeatureSet struct {
 	Docker     bool
 }
 
+// Names returns the canonical feature names in a stable order.
 func (f FeatureSet) Names() []string {
 	names := make([]string, 0, 5)
 	if f.Clean {
@@ -101,15 +112,22 @@ type TemplateData struct {
 	Features    FeatureSet
 }
 
+// TemplateInfo describes a template asset and which frameworks/features it
+// applies to.
 type TemplateInfo struct {
 	TemplatePath string
 	Frameworks   []string
 	Features     []string
 }
 
+// StatusFunc receives progress updates during scaffold generation.
 type StatusFunc func(step string, current int, total int)
+
+// CommandRunner runs external commands (for example, `go mod tidy`) as part of
+// scaffold generation.
 type CommandRunner func(dir string, name string, args ...string) error
 
+// Options configures project generation.
 type Options struct {
 	ProjectName string
 	Framework   string
@@ -133,22 +151,29 @@ type generationStep struct {
 	fn   func(*generationContext) error
 }
 
+// Frameworks returns the supported framework identifiers.
 func Frameworks() []string {
 	return slices.Clone(supportedFrameworks)
 }
 
+// InteractiveFeatures returns the list of feature names presented in
+// interactive mode.
 func InteractiveFeatures() []string {
 	return slices.Clone(interactiveFeatures)
 }
 
+// DefaultFastFeatures returns the feature names enabled by default for --fast.
 func DefaultFastFeatures() []string {
 	return slices.Clone(defaultFastFeatures)
 }
 
+// IsSupportedFramework reports whether framework is a supported framework
+// identifier.
 func IsSupportedFramework(framework string) bool {
 	return slices.Contains(supportedFrameworks, framework)
 }
 
+// NormalizeFeatureNames converts raw feature inputs to canonical feature names.
 func NormalizeFeatureNames(raw []string) ([]string, error) {
 	out := make([]string, 0, len(raw))
 	seen := make(map[string]struct{}, len(raw))
@@ -170,6 +195,8 @@ func NormalizeFeatureNames(raw []string) ([]string, error) {
 	return out, nil
 }
 
+// ParseFeatureCSV parses a comma-separated list of features and returns
+// canonical feature names.
 func ParseFeatureCSV(raw string) ([]string, error) {
 	if strings.TrimSpace(raw) == "" {
 		return nil, nil
@@ -177,6 +204,7 @@ func ParseFeatureCSV(raw string) ([]string, error) {
 	return NormalizeFeatureNames(strings.Split(raw, ","))
 }
 
+// FeatureSetFromNames maps canonical feature names to a FeatureSet.
 func FeatureSetFromNames(features []string) FeatureSet {
 	set := FeatureSet{}
 	for _, feature := range features {
@@ -196,6 +224,7 @@ func FeatureSetFromNames(features []string) FeatureSet {
 	return set
 }
 
+// TemplateCatalog lists all embedded templates and their compatibility metadata.
 func TemplateCatalog() []TemplateInfo {
 	return []TemplateInfo{
 		{TemplatePath: "templates/env.tmpl", Frameworks: []string{"all"}, Features: []string{"base"}},
@@ -219,6 +248,7 @@ func TemplateCatalog() []TemplateInfo {
 	}
 }
 
+// BuildTemplateData builds the template data used to render a project scaffold.
 func BuildTemplateData(projectName, framework, cliVersion string, features []string) TemplateData {
 	normalizedVersion := strings.TrimSpace(cliVersion)
 	if normalizedVersion == "" {
@@ -255,6 +285,8 @@ func getRootDir() (string, error) {
 	return "", fmt.Errorf("templates folder not found")
 }
 
+// GenerateProject generates a new project scaffold based on the provided
+// options.
 func GenerateProject(opts Options) (retErr error) {
 	if strings.TrimSpace(opts.ProjectName) == "" {
 		return errors.New("project name is required")

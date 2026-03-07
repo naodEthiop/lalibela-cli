@@ -4,16 +4,21 @@ import (
 	"github.com/naodEthiop/lalibela-cli/internal/features/shared"
 )
 
+// Feature installs the "config" scaffold feature.
 type Feature struct{}
 
+// New returns a new "config" feature installer.
 func New() Feature { return Feature{} }
 
+// Name returns the registry name of the feature.
 func (Feature) Name() string { return "config" }
 
+// Compatible reports whether the feature supports a given framework.
 func (Feature) Compatible(framework string) bool {
 	return shared.IsFeatureCompatible("config", framework)
 }
 
+// Install writes the feature's scaffold files into projectRoot.
 func (Feature) Install(projectRoot string) error {
 	const file = `package config
 

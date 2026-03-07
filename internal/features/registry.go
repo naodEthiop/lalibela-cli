@@ -15,6 +15,7 @@ import (
 	swaggerfeature "github.com/naodEthiop/lalibela-cli/internal/features/swagger"
 )
 
+// Registry maps feature names to their installers.
 var Registry = map[string]Feature{
 	"auth":              authfeature.New(),
 	"config":            configfeature.New(),
@@ -30,6 +31,8 @@ var Registry = map[string]Feature{
 	"swagger":           swaggerfeature.New(),
 }
 
+// DefaultProductionFeatures is the set of feature names installed by default
+// for production scaffolds.
 var DefaultProductionFeatures = []string{
 	"config",
 	"logger",

@@ -1,0 +1,24 @@
+# test log
+open C:\Users\NAODET~1\AppData\Local\Temp\TestInstallFeatureIdempotent2696671440\001\main.go
+open C:\Users\NAODET~1\AppData\Local\Temp\TestInstallFeatureIdempotent2696671440\001\.lalibela\features.json
+stat C:\Users\NAODET~1\AppData\Local\Temp\TestInstallFeatureIdempotent2696671440\001\internal\config\config.go
+stat C:\Users\NAODET~1\AppData\Local\Temp\TestInstallFeatureIdempotent2696671440\001\internal\config
+stat C:\Users\NAODET~1\AppData\Local\Temp\TestInstallFeatureIdempotent2696671440\001\internal
+stat C:\Users\NAODET~1\AppData\Local\Temp\TestInstallFeatureIdempotent2696671440\001
+open C:\Users\NAODET~1\AppData\Local\Temp\TestInstallFeatureCompatibility3345392390\001\.lalibela\features.json
+open C:\Users\NAODET~1\AppData\Local\Temp\TestInstallFeatureIdempotent2696671440\001\internal\config\config.go
+stat C:\Users\NAODET~1\AppData\Local\Temp\TestInstallFeatureIdempotent2696671440\001\.lalibela
+open C:\Users\NAODET~1\AppData\Local\Temp
+stat C:\Users\NAODET~1\AppData\Local\Temp\TestInstallFeatureIdempotent2696671440\001
+open C:\Users\NAODET~1\AppData\Local\Temp\TestInstallFeatureIdempotent2696671440\001\.lalibela\features.json
+open C:\Users\NAODET~1\AppData\Local\Temp\TestInstallFeatureIdempotent2696671440\001\.lalibela\features.json
+open C:\Users\NAODET~1\AppData\Local\Temp
+open C:\Users\NAODET~1\AppData\Local\Temp\lalibela-features-example-3644961139\.lalibela\features.json
+stat C:\Users\NAODET~1\AppData\Local\Temp\lalibela-features-example-3644961139\deployments\Dockerfile
+stat C:\Users\NAODET~1\AppData\Local\Temp\lalibela-features-example-3644961139\deployments
+stat C:\Users\NAODET~1\AppData\Local\Temp\lalibela-features-example-3644961139
+open C:\Users\NAODET~1\AppData\Local\Temp\lalibela-features-example-3644961139\deployments\Dockerfile
+stat C:\Users\NAODET~1\AppData\Local\Temp\lalibela-features-example-3644961139\.lalibela
+stat C:\Users\NAODET~1\AppData\Local\Temp\lalibela-features-example-3644961139
+open C:\Users\NAODET~1\AppData\Local\Temp\lalibela-features-example-3644961139\.lalibela\features.json
+open C:\Users\NAODET~1\AppData\Local\Temp

@@ -11,11 +11,13 @@ import (
 
 const statePath = ".lalibela/features.json"
 
+// State stores which features have been installed for a project directory.
 type State struct {
 	Framework string   `json:"framework"`
 	Installed []string `json:"installed"`
 }
 
+// KnownFeatures returns a sorted list of registered feature names.
 func KnownFeatures() []string {
 	keys := make([]string, 0, len(Registry))
 	for name := range Registry {
@@ -25,6 +27,8 @@ func KnownFeatures() []string {
 	return keys
 }
 
+// InstallDefaults installs DefaultProductionFeatures that are compatible with
+// the target framework.
 func InstallDefaults(projectRoot, framework string, runner CommandRunner) ([]InstallResult, error) {
 	results := make([]InstallResult, 0, len(DefaultProductionFeatures))
 	changed := false
@@ -46,6 +50,10 @@ func InstallDefaults(projectRoot, framework string, runner CommandRunner) ([]Ins
 	return results, nil
 }
 
+// InstallFeature installs a single feature into the given project directory.
+//
+// If a runner is provided and the feature installation wrote files, InstallFeature
+// runs `go mod tidy` to resolve dependencies.
 func InstallFeature(projectRoot, framework, featureName string, runner CommandRunner) (InstallResult, error) {
 	result, err := installFeature(projectRoot, framework, featureName, false)
 	if err != nil {
@@ -102,6 +110,8 @@ func installFeature(projectRoot, framework, featureName string, saveOnly bool) (
 	return result, nil
 }
 
+// DetectFramework attempts to infer a project's framework by inspecting the
+// imports in its main.go file.
 func DetectFramework(projectRoot string) (string, error) {
 	if state, err := loadState(projectRoot); err == nil && strings.TrimSpace(state.Framework) != "" {
 		return strings.ToLower(strings.TrimSpace(state.Framework)), nil

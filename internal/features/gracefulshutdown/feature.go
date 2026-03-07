@@ -4,16 +4,21 @@ import (
 	"github.com/naodEthiop/lalibela-cli/internal/features/shared"
 )
 
+// Feature installs the "graceful-shutdown" scaffold feature.
 type Feature struct{}
 
+// New returns a new "graceful-shutdown" feature installer.
 func New() Feature { return Feature{} }
 
+// Name returns the registry name of the feature.
 func (Feature) Name() string { return "graceful-shutdown" }
 
+// Compatible reports whether the feature supports a given framework.
 func (Feature) Compatible(framework string) bool {
 	return shared.IsFeatureCompatible("graceful-shutdown", framework)
 }
 
+// Install writes the feature's scaffold files into projectRoot.
 func (Feature) Install(projectRoot string) error {
 	const file = `package server
 

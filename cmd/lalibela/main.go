@@ -22,8 +22,11 @@ import (
 )
 
 var (
-	Version   = "dev"
+	// Version is the CLI version string (overridden at build time).
+	Version = "dev"
+	// GitCommit is the git commit hash (overridden at build time).
 	GitCommit = "dev"
+	// BuildDate is the build timestamp (overridden at build time).
 	BuildDate = "unknown"
 )
 

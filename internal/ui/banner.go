@@ -21,6 +21,7 @@ var bannerGradient = []string{
 	"38;5;159",
 }
 
+// RenderBanner prints the animated Lalibela banner to stdout.
 func RenderBanner() {
 	width := TerminalWidth()
 	for i, line := range bannerLines {

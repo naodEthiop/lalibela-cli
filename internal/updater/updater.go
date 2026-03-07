@@ -29,8 +29,11 @@ const (
 	checksumSignatureName = "checksums.txt.sig"
 )
 
+// ErrAlreadyLatest is returned by SelfUpdate when the current version is equal
+// to or newer than the latest released version.
 var ErrAlreadyLatest = errors.New("already up to date")
 
+// Options configures the updater.
 type Options struct {
 	CurrentVersion string
 	Owner          string
@@ -49,6 +52,8 @@ type releaseAsset struct {
 	BrowserDownloadURL string `json:"browser_download_url"`
 }
 
+// SelfUpdate downloads and replaces the currently running lalibela executable
+// with the latest GitHub release (when available).
 func SelfUpdate(opts Options) error {
 	if strings.TrimSpace(opts.CurrentVersion) == "" {
 		return errors.New("current version is required")

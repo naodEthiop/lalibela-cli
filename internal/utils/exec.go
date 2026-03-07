@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+// RunCommand runs an external command in the given directory, returning a
+// readable error message that includes combined stdout/stderr output when the
+// command fails.
 func RunCommand(dir string, name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir

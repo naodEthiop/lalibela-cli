@@ -13,6 +13,7 @@ import (
 	"github.com/naodEthiop/lalibela-cli/internal/generator"
 )
 
+// Config is the JSON structure stored on disk (e.g. ~/.lalibela.json).
 type Config struct {
 	ProjectName string   `json:"project_name"`
 	Framework   string   `json:"framework"`
@@ -20,6 +21,8 @@ type Config struct {
 	Fast        bool     `json:"fast"`
 }
 
+// Options is the resolved CLI configuration after combining flags and config
+// file values.
 type Options struct {
 	ProjectName      string
 	Framework        string
@@ -33,6 +36,10 @@ type Options struct {
 	ConfigPath       string
 }
 
+// ParseArgs parses CLI flags and merges them with optional config file values.
+//
+// It returns an Options struct that the main command can use to drive
+// interactive prompts and scaffold generation.
 func ParseArgs(args []string) (Options, error) {
 	var opts Options
 	if len(args) > 0 && strings.EqualFold(strings.TrimSpace(args[0]), "help") {

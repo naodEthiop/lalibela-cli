@@ -4,16 +4,21 @@ import (
 	"github.com/naodEthiop/lalibela-cli/internal/features/shared"
 )
 
+// Feature installs the "logger" scaffold feature.
 type Feature struct{}
 
+// New returns a new "logger" feature installer.
 func New() Feature { return Feature{} }
 
+// Name returns the registry name of the feature.
 func (Feature) Name() string { return "logger" }
 
+// Compatible reports whether the feature supports a given framework.
 func (Feature) Compatible(framework string) bool {
 	return shared.IsFeatureCompatible("logger", framework)
 }
 
+// Install writes the feature's scaffold files into projectRoot.
 func (Feature) Install(projectRoot string) error {
 	const file = `package logger
 

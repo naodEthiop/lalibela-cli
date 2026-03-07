@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 )
 
+// WriteFileIfMissing writes content to a project file if the file does not
+// already exist.
 func WriteFileIfMissing(projectRoot, relativePath string, content []byte) error {
 	fullPath := filepath.Join(projectRoot, relativePath)
 	if _, err := os.Stat(fullPath); err == nil {

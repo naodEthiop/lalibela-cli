@@ -8,6 +8,7 @@ import (
 
 var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
+// Spinner renders a simple animated progress indicator in the terminal.
 type Spinner struct {
 	message  string
 	interval time.Duration
@@ -17,6 +18,7 @@ type Spinner struct {
 	running  bool
 }
 
+// NewSpinner creates a spinner with the provided initial message.
 func NewSpinner(message string) *Spinner {
 	return &Spinner{
 		message:  message,
@@ -24,6 +26,7 @@ func NewSpinner(message string) *Spinner {
 	}
 }
 
+// Start begins rendering the spinner until it is stopped.
 func (s *Spinner) Start() {
 	s.mu.Lock()
 	if s.running {
@@ -62,17 +65,20 @@ func (s *Spinner) Start() {
 	}()
 }
 
+// Update changes the message displayed alongside the spinner.
 func (s *Spinner) Update(message string) {
 	s.mu.Lock()
 	s.message = message
 	s.mu.Unlock()
 }
 
+// StopSuccess stops the spinner and prints a success message.
 func (s *Spinner) StopSuccess(message string) {
 	s.stop()
 	fmt.Println(Green("✔ " + message))
 }
 
+// StopError stops the spinner and prints an error message.
 func (s *Spinner) StopError(message string) {
 	s.stop()
 	fmt.Println(Red("✖ " + message))

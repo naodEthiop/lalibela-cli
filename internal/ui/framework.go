@@ -1,5 +1,6 @@
 package ui
 
+// FrameworkIcon returns a short icon for a framework identifier.
 func FrameworkIcon(framework string) string {
 	switch framework {
 	case "gin":
@@ -15,6 +16,7 @@ func FrameworkIcon(framework string) string {
 	}
 }
 
+// FrameworkLabel returns a human-friendly label for a framework identifier.
 func FrameworkLabel(framework string) string {
 	if framework == "nethttp" {
 		return "net/http"
@@ -22,6 +24,7 @@ func FrameworkLabel(framework string) string {
 	return framework
 }
 
+// FrameworkDescription returns a short description for a framework identifier.
 func FrameworkDescription(framework string) string {
 	switch framework {
 	case "gin":

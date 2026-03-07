@@ -15,21 +15,25 @@ const (
 	stateFileName        = "modules.json"
 )
 
+// Definition describes a module marker that can be installed locally.
 type Definition struct {
 	Name    string
 	Version string
 }
 
+// InstalledModule records an installed module marker in the local state file.
 type InstalledModule struct {
 	Name        string `json:"name"`
 	Version     string `json:"version"`
 	InstalledAt string `json:"installed_at"`
 }
 
+// State is the persisted module registry for the current machine/user.
 type State struct {
 	Modules map[string]InstalledModule `json:"modules"`
 }
 
+// Registry lists known modules that the scaffold can ensure are installed.
 var Registry = map[string]Definition{
 	"framework:gin":             {Name: "framework:gin", Version: defaultModuleVersion},
 	"framework:echo":            {Name: "framework:echo", Version: defaultModuleVersion},
@@ -52,6 +56,8 @@ var Registry = map[string]Definition{
 	"feature:redis":             {Name: "feature:redis", Version: defaultModuleVersion},
 }
 
+// EnsureScaffoldModules creates local module markers for the selected
+// framework/features.
 func EnsureScaffoldModules(framework string, features []string) error {
 	root, err := modulesRoot()
 	if err != nil {
