@@ -1,5 +1,6 @@
 /bin
 /vendor
+/.gocache/
 *.exe
 *.tmp
 *.log
