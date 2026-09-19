@@ -16,6 +16,9 @@ import (
 	"time"
 
 	"{{ .ModuleName }}/internal/routes"
+{{ if .Features.PostgreSQL }}
+	"{{ .ModuleName }}/config"
+{{ end }}
 {{ if eq .Framework "gin" }}
 	"github.com/gin-gonic/gin"
 {{ else if eq .Framework "echo" }}
@@ -164,6 +167,19 @@ func main() {
 		log.Fatal(err)
 	}
 
+{{ if .Features.PostgreSQL }}
+	db, err := config.InitDB()
+	if err != nil {
+		log.Printf("postgresql: could not initialize database handle: %v", err)
+	} else {
+		defer db.Close()
+		if pingErr := db.Ping(); pingErr != nil {
+			log.Printf("postgresql: connected handle created, but ping failed (is the database reachable?): %v", pingErr)
+		} else {
+			log.Println("postgresql: connection verified")
+		}
+	}
+{{ end }}
 {{ if eq .Framework "gin" }}
 	gin.SetMode(gin.ReleaseMode)
 	app := gin.New()

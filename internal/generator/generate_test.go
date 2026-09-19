@@ -2,6 +2,8 @@ package generator
 
 import (
 	"errors"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -165,6 +167,82 @@ func TestGenerateProjectUsesEmbeddedTemplates(t *testing.T) {
 		if _, statErr := os.Stat(p); statErr != nil {
 			t.Fatalf("expected generated file %s: %v", p, statErr)
 		}
+	}
+}
+
+// TestPostgreSQLFeatureIsWiredIntoMainGo proves the PostgreSQL feature
+// actually changes what the generated server does at runtime, rather than
+// just dropping an orphaned config/database.go file that nothing calls.
+// Selecting the feature must make main.go import the config package and
+// call config.InitDB(); not selecting it must leave main.go with no such
+// reference. Parsing the generated main.go (rather than substring-matching)
+// also guarantees it's still syntactically valid Go with the feature wired.
+func TestPostgreSQLFeatureIsWiredIntoMainGo(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name       string
+		features   []string
+		wantImport bool
+	}{
+		{name: "with postgresql selected", features: []string{FeaturePostgreSQL}, wantImport: true},
+		{name: "without postgresql selected", features: []string{FeatureLogger}, wantImport: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			originalWD, err := os.Getwd()
+			if err != nil {
+				t.Fatalf("getwd: %v", err)
+			}
+			defer func() { _ = os.Chdir(originalWD) }()
+			if err := os.Chdir(tempDir); err != nil {
+				t.Fatalf("chdir: %v", err)
+			}
+
+			projectName := "wiring-demo"
+			err = GenerateProject(Options{
+				ProjectName: projectName,
+				Framework:   FrameworkGin,
+				Features:    tc.features,
+				Runner:      func(string, string, ...string) error { return nil },
+			})
+			if err != nil {
+				t.Fatalf("GenerateProject: %v", err)
+			}
+
+			mainGoPath := filepath.Join(tempDir, projectName, "main.go")
+			src, err := os.ReadFile(mainGoPath)
+			if err != nil {
+				t.Fatalf("reading generated main.go: %v", err)
+			}
+
+			fset := token.NewFileSet()
+			file, err := parser.ParseFile(fset, mainGoPath, src, parser.ImportsOnly)
+			if err != nil {
+				t.Fatalf("generated main.go is not valid Go (import block): %v", err)
+			}
+			hasConfigImport := false
+			for _, imp := range file.Imports {
+				if strings.Contains(imp.Path.Value, "/config") {
+					hasConfigImport = true
+				}
+			}
+			if hasConfigImport != tc.wantImport {
+				t.Fatalf("main.go config import = %v, want %v", hasConfigImport, tc.wantImport)
+			}
+
+			// ImportsOnly parsing above stops at the import block; parse the
+			// whole file to confirm it's fully valid Go, not just the
+			// import line.
+			if _, err := parser.ParseFile(fset, mainGoPath, src, 0); err != nil {
+				t.Fatalf("generated main.go is not valid Go: %v", err)
+			}
+
+			hasInitDBCall := strings.Contains(string(src), "config.InitDB()")
+			if hasInitDBCall != tc.wantImport {
+				t.Fatalf("main.go calls config.InitDB() = %v, want %v", hasInitDBCall, tc.wantImport)
+			}
+		})
 	}
 }
 
