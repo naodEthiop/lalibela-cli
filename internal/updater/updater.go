@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"crypto/sha256"
+	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -20,6 +21,15 @@ import (
 	"strings"
 	"time"
 )
+
+// embeddedPublicKey is the armored public half of the key used to sign
+// official releases (see .github/workflows/release.yml). Embedding it means
+// signature verification works out of the box with no provisioning step on
+// any install path; LALIBELA_UPDATE_PUBLIC_KEY_PATH/LALIBELA_UPDATE_PUBLIC_KEY
+// or ~/.lalibela/public.gpg still override it for key rotation or testing.
+//
+//go:embed release_public_key.asc
+var embeddedPublicKey []byte
 
 const (
 	defaultOwner          = "naodEthiop"
@@ -326,6 +336,9 @@ func resolvePublicKeyPath() (string, func(), error) {
 	}
 
 	armored := strings.TrimSpace(os.Getenv("LALIBELA_UPDATE_PUBLIC_KEY"))
+	if armored == "" {
+		armored = strings.TrimSpace(string(embeddedPublicKey))
+	}
 	if armored == "" {
 		return "", func() {}, errors.New("missing update public key (set LALIBELA_UPDATE_PUBLIC_KEY_PATH or LALIBELA_UPDATE_PUBLIC_KEY)")
 	}
