@@ -42,7 +42,7 @@ This philosophy guides the CLI design: practical foundations, clear structure, a
 - Interactive and non-interactive modes (`--yes`)
 - Actionable errors with command-specific help
 - Colorized help/version output for better terminal UX
-- Built-in feature installation system (`lalibela add <feature>`)
+- Built-in feature installation system (`lalibela add <feature>`) — writes the feature's files into your project; as of now, only **PostgreSQL** is wired into the generated `main.go` so selecting it changes runtime behavior. The rest (JWT, the always-on `config`/`logger`/`health`/`cors`/`error_handler`/`graceful_shutdown` files, and Clean Architecture) currently generate working, self-contained code that you wire in yourself — see the comments in each generated file. Auto-wiring the rest is tracked as follow-up work.
 - Safe self-uninstall command (`lalibela uninstall` with optional `--force`)
 - Embedded templates in the binary
 - Cross-platform support: Windows, macOS, Linux
@@ -207,23 +207,33 @@ myapi/
 |- templates/
 |  |- index.html
 |  |- lalibela2.webp
+|- config/
+|  |- database.go          (if PostgreSQL selected — wired into main.go)
+|  |- logger.go            (if Logger selected, not yet wired)
 |- internal/
 |  |- routes/
 |  |  |- routes.go
 |  |- middleware/
-|  |  |- jwt.go            (if selected)
+|  |  |- jwt.go            (if JWT selected, not yet wired into routes.go)
 |  |- config/
-|  |  |- config.go         (default production feature)
+|  |  |- config.go         (default production feature, not yet wired)
 |  |- logger/
-|  |  |- logger.go         (default production feature)
+|  |  |- logger.go         (default production feature, not yet wired —
+|                            a second, separate logger from config/logger.go above)
 |  |- server/
-|     |- health.go
-|     |- cors.go
-|     |- error_handler.go
-|     |- graceful_shutdown.go
+|     |- health.go         (default production feature, not yet wired —
+|                            routes.go has its own inline /health handler)
+|     |- cors.go            (not yet wired)
+|     |- error_handler.go   (not yet wired)
+|     |- graceful_shutdown.go (not yet wired)
 |- .lalibela/
    |- features.json
 ```
+
+"Not yet wired" means the file is generated and compiles, but nothing in
+`main.go`/`startup.go`/`routes.go` imports or calls it yet — you get working
+code to wire in yourself, not an automatically active feature. See the
+Features section above for current status.
 
 ---
 
@@ -244,7 +254,17 @@ Use a custom config file:
 lalibela -config ./lalibela.json
 ```
 
-Lalibela also stores local state (for example, installed feature metadata) under `~/.lalibela/`.
+`~/.lalibela.json` (or `-config`) is hand-edited by you — Lalibela never
+writes it for you.
+
+Two separate, unrelated things live under `.lalibela/`, easy to conflate:
+- **`<project>/.lalibela/features.json`** (relative to a generated project,
+  not your home directory) — tracks which features `lalibela add` has
+  installed into that specific project.
+- **`~/.lalibela/`** (your home directory) — used for the `lalibela update`
+  signing-key override (`~/.lalibela/public.gpg`, optional — a key is
+  embedded in the binary by default) and internal install markers. It does
+  not hold per-project feature state.
 
 ---
 

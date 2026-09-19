@@ -42,13 +42,21 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
+# Release tags use a "v" prefix (e.g. v0.1.23), but goreleaser's archive
+# name_template uses {{ .Version }}, which strips the "v" (e.g. lalibela_0.1.23_...).
+# The download path needs the full tag; the archive filename must not have
+# the "v". Normalize both forms so this works whether VERSION was resolved
+# from the API (has "v") or passed in by the caller with or without one.
+ARCHIVE_VERSION="${VERSION#v}"
+TAG="v${ARCHIVE_VERSION}"
+
 EXT="tar.gz"
 if [ "$OS" = "windows" ]; then
   EXT="zip"
 fi
 
-ARCHIVE="${BINARY_NAME}_${VERSION}_${OS}_${ARCH}.${EXT}"
-BASE_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${VERSION}"
+ARCHIVE="${BINARY_NAME}_${ARCHIVE_VERSION}_${OS}_${ARCH}.${EXT}"
+BASE_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${TAG}"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 
