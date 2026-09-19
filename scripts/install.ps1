@@ -67,8 +67,13 @@ if ($Version -eq "latest") {
     $Version = Get-LatestVersion -Owner $RepoOwner -Name $RepoName
 }
 
-$archive = "${BinaryName}_${Version}_windows_${arch}.zip"
-$baseUrl = "https://github.com/$RepoOwner/$RepoName/releases/download/$Version"
+# Release tags carry a "v" prefix (e.g. v0.1.23), but goreleaser's archive
+# name_template uses {{ .Version }}, which strips it (e.g. lalibela_0.1.23_...).
+# The download path needs the full tag; the archive filename must not.
+$archiveVersion = $Version -replace '^v', ''
+$tag = "v$archiveVersion"
+$archive = "${BinaryName}_${archiveVersion}_windows_${arch}.zip"
+$baseUrl = "https://github.com/$RepoOwner/$RepoName/releases/download/$tag"
 $tmpDir = Join-Path $env:TEMP ("lalibela-install-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $tmpDir | Out-Null
 
